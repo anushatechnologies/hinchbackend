@@ -1,7 +1,13 @@
+# Maven / Gradle build outputs
 target/
-!.mvn/wrapper/maven-wrapper.jar
+build/
 !**/src/main/**/target/
 !**/src/test/**/target/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Maven wrapper JAR (keep only wrapper scripts)
+!.mvn/wrapper/maven-wrapper.jar
 
 ### STS ###
 .apt_generated
@@ -13,7 +19,7 @@ target/
 .sts4-cache
 
 ### IntelliJ IDEA ###
-.idea
+.idea/
 *.iws
 *.iml
 *.ipr
@@ -24,9 +30,6 @@ target/
 /dist/
 /nbdist/
 /.nb-gradletask/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
 
 ### VS Code ###
 .vscode/
@@ -34,6 +37,8 @@ build/
 ### OS Files ###
 .DS_Store
 Thumbs.db
+
+### Logs ###
 *.log
 
 ### Environment ###
