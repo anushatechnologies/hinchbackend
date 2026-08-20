@@ -53,6 +53,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/subcategories/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/brands/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                // Public Payment Gateway Config & Webhook Callbacks
+                .requestMatchers(HttpMethod.GET, "/api/payments/config").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/payments/webhook").permitAll()
                 // Swagger / OpenAPI UI Documentation
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                 // Admin Endpoints

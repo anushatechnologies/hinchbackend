@@ -95,7 +95,7 @@ public class OrderService {
         order.setState(request.getState());
         order.setPincode(request.getPincode());
         order.setPaymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : PaymentMethod.UPI);
-        order.setPaymentStatus(request.getPaymentMethod() == PaymentMethod.CASH_ON_DELIVERY ? PaymentStatus.PENDING : PaymentStatus.PAID);
+        order.setPaymentStatus(PaymentStatus.PENDING);
         order.setOrderStatus(OrderStatus.PLACED);
         order.setNotes(request.getNotes());
 

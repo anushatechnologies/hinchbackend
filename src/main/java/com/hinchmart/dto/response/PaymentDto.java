@@ -21,6 +21,11 @@ public class PaymentDto {
     private PaymentStatus paymentStatus;
     private String gatewayOrderId;
     private String gatewayPaymentId;
+    private String razorpayKeyId;
+    private Long amountInPaise;
+    private String buyerEmail;
+    private String buyerPhone;
+    private String companyName;
     private List<PaymentTransactionDto> transactions = new ArrayList<>();
     private List<RefundDto> refunds = new ArrayList<>();
     private LocalDateTime createdAt;
@@ -123,6 +128,46 @@ public class PaymentDto {
 
     public void setGatewayPaymentId(String gatewayPaymentId) {
         this.gatewayPaymentId = gatewayPaymentId;
+    }
+
+    public String getRazorpayKeyId() {
+        return razorpayKeyId;
+    }
+
+    public void setRazorpayKeyId(String razorpayKeyId) {
+        this.razorpayKeyId = razorpayKeyId;
+    }
+
+    public Long getAmountInPaise() {
+        return amountInPaise;
+    }
+
+    public void setAmountInPaise(Long amountInPaise) {
+        this.amountInPaise = amountInPaise;
+    }
+
+    public String getBuyerEmail() {
+        return buyerEmail;
+    }
+
+    public void setBuyerEmail(String buyerEmail) {
+        this.buyerEmail = buyerEmail;
+    }
+
+    public String getBuyerPhone() {
+        return buyerPhone;
+    }
+
+    public void setBuyerPhone(String buyerPhone) {
+        this.buyerPhone = buyerPhone;
+    }
+
+    public String getCompanyName() {
+        return companyName;
+    }
+
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
     }
 
     public List<PaymentTransactionDto> getTransactions() {

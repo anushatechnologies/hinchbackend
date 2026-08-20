@@ -22,3 +22,11 @@ hinchmart:
     default-test-code: 123456
   seed:
     enabled: true
+
+razorpay:
+  key-id: ${RAZORPAY_KEY_ID:rzp_live_TO6q7NUVnPM6bA}
+  key-secret: ${RAZORPAY_KEY_SECRET:pRMq2obuE51XoJlH3NDyUl9w}
+  webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:}
+  currency: INR
+  company-name: HinchMart
+
