@@ -16,7 +16,9 @@ import com.hinchmart.exception.UnauthorizedException;
 import com.hinchmart.repository.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -197,6 +199,27 @@ public class OrderService {
     @Transactional(readOnly = true)
     public Page<OrderDto> getAllOrders(Pageable pageable) {
         Page<Order> orders = orderRepository.findAllByOrderByCreatedAtDesc(pageable);
+        List<OrderDto> dtos = orders.getContent().stream()
+                .map(this::mapToOrderDto)
+                .collect(Collectors.toList());
+        return new PageImpl<>(dtos, pageable, orders.getTotalElements());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<OrderDto> findAllOrders(int page, int size, String status) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Order> orders;
+        if (status != null && !status.trim().isEmpty() && !status.equalsIgnoreCase("ALL")) {
+            try {
+                OrderStatus orderStatus = OrderStatus.valueOf(status.trim().toUpperCase());
+                orders = orderRepository.findByOrderStatusOrderByCreatedAtDesc(orderStatus, pageable);
+            } catch (IllegalArgumentException e) {
+                orders = orderRepository.findAllByOrderByCreatedAtDesc(pageable);
+            }
+        } else {
+            orders = orderRepository.findAllByOrderByCreatedAtDesc(pageable);
+        }
+
         List<OrderDto> dtos = orders.getContent().stream()
                 .map(this::mapToOrderDto)
                 .collect(Collectors.toList());

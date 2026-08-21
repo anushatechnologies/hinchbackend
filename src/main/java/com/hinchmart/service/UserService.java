@@ -3,11 +3,7 @@ package com.hinchmart.service;
 import com.hinchmart.dto.request.BuyerProfileUpdateRequest;
 import com.hinchmart.dto.request.SellerProfileUpdateRequest;
 import com.hinchmart.dto.request.SellerStatusUpdateRequest;
-import com.hinchmart.dto.response.BuyerProfileDto;
-import com.hinchmart.dto.response.DashboardStatsDto;
-import com.hinchmart.dto.response.SellerDocumentDto;
-import com.hinchmart.dto.response.SellerProfileDto;
-import com.hinchmart.dto.response.UserDto;
+import com.hinchmart.dto.response.*;
 import com.hinchmart.entity.BuyerProfile;
 import com.hinchmart.entity.SellerProfile;
 import com.hinchmart.entity.User;
@@ -17,9 +13,15 @@ import com.hinchmart.entity.enums.Role;
 import com.hinchmart.entity.enums.SellerStatus;
 import com.hinchmart.exception.ResourceNotFoundException;
 import com.hinchmart.repository.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,6 +35,7 @@ public class UserService {
     private final ProductRepository productRepository;
     private final RfqRepository rfqRepository;
     private final CategoryRepository categoryRepository;
+    private final OrderRepository orderRepository;
     private final AuthService authService;
     private final ActivityLogService activityLogService;
 
@@ -42,6 +45,7 @@ public class UserService {
                        ProductRepository productRepository,
                        RfqRepository rfqRepository,
                        CategoryRepository categoryRepository,
+                       OrderRepository orderRepository,
                        AuthService authService,
                        ActivityLogService activityLogService) {
         this.userRepository = userRepository;
@@ -50,6 +54,7 @@ public class UserService {
         this.productRepository = productRepository;
         this.rfqRepository = rfqRepository;
         this.categoryRepository = categoryRepository;
+        this.orderRepository = orderRepository;
         this.authService = authService;
         this.activityLogService = activityLogService;
     }
@@ -214,6 +219,59 @@ public class UserService {
         return sellers.stream()
                 .map(this::mapToSellerProfileDto)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<BuyerDto> findAllBuyers(int page, int size, String search) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<User> buyersPage;
+        if (search != null && !search.trim().isEmpty()) {
+            buyersPage = userRepository.searchBuyers(search.trim(), pageable);
+        } else {
+            buyersPage = userRepository.findByRoleOrderByCreatedAtDesc(Role.BUYER, pageable);
+        }
+
+        List<BuyerDto> dtos = buyersPage.getContent().stream()
+                .map(this::mapToBuyerDto)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(dtos, pageable, buyersPage.getTotalElements());
+    }
+
+    public BuyerDto mapToBuyerDto(User buyer) {
+        BuyerDto dto = new BuyerDto();
+        dto.setId(buyer.getId());
+        dto.setUserId(buyer.getId());
+        dto.setFullName(buyer.getFullName());
+        dto.setEmail(buyer.getEmail());
+        dto.setPhone(buyer.getPhone());
+        dto.setStatus(buyer.getStatus());
+        dto.setRole(buyer.getRole());
+        dto.setCreatedAt(buyer.getCreatedAt());
+        dto.setUpdatedAt(buyer.getUpdatedAt());
+
+        BuyerProfile bp = buyer.getBuyerProfile();
+        if (bp != null) {
+            dto.setBuyerProfileId(bp.getId());
+            dto.setCompanyName(bp.getCompanyName());
+            dto.setGstin(bp.getGstin());
+            dto.setBusinessType(bp.getBusinessType());
+            dto.setBillingAddress(bp.getBillingAddress());
+            dto.setShippingAddress(bp.getShippingAddress());
+            dto.setCity(bp.getCity());
+            dto.setState(bp.getState());
+            dto.setPincode(bp.getPincode());
+            dto.setCreditLimit(bp.getCreditLimit());
+            dto.setAnnualTurnover(bp.getAnnualTurnover());
+            dto.setBuyerProfile(mapToBuyerProfileDto(bp));
+        }
+
+        long totalOrders = orderRepository.countOrdersByBuyerId(buyer.getId());
+        BigDecimal lifetimeSpend = orderRepository.calculateBuyerLifetimeSpend(buyer.getId());
+        dto.setTotalOrders(totalOrders);
+        dto.setLifetimeSpend(lifetimeSpend != null ? lifetimeSpend : BigDecimal.ZERO);
+
+        return dto;
     }
 
     public BuyerProfileDto mapToBuyerProfileDto(BuyerProfile bp) {

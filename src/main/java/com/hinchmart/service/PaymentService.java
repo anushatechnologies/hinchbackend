@@ -23,6 +23,11 @@ import com.razorpay.RazorpayException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -538,6 +543,54 @@ public class PaymentService {
         return mapToRefundDto(savedRefund);
     }
 
+    @Transactional(readOnly = true)
+    public Page<PaymentTransactionDto> getTransactions(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<PaymentTransaction> trxPage = paymentTransactionRepository.findAllByOrderByCreatedAtDesc(pageable);
+        List<PaymentTransactionDto> dtos = trxPage.getContent().stream()
+                .map(this::mapToPaymentTransactionDto)
+                .collect(Collectors.toList());
+        return new PageImpl<>(dtos, pageable, trxPage.getTotalElements());
+    }
+
+    public PaymentTransactionDto mapToPaymentTransactionDto(PaymentTransaction t) {
+        PaymentTransactionDto dto = new PaymentTransactionDto();
+        dto.setId(t.getId());
+        dto.setTransactionType(t.getTransactionType());
+        dto.setAmount(t.getAmount());
+        dto.setStatus(t.getStatus());
+        dto.setGatewayReference(t.getGatewayReference());
+        dto.setResponsePayload(t.getResponsePayload());
+        dto.setCreatedAt(t.getCreatedAt());
+
+        if (t.getPayment() != null) {
+            Payment p = t.getPayment();
+            dto.setPaymentId(p.getId());
+            dto.setPaymentNumber(p.getPaymentNumber());
+            dto.setPaymentMethod(p.getPaymentMethod());
+            dto.setCurrency(p.getCurrency());
+            dto.setGatewayOrderId(p.getGatewayOrderId());
+            dto.setGatewayPaymentId(p.getGatewayPaymentId());
+
+            if (p.getOrder() != null) {
+                dto.setOrderId(p.getOrder().getId());
+                dto.setOrderNumber(p.getOrder().getOrderNumber());
+            }
+
+            if (p.getBuyer() != null) {
+                dto.setBuyerId(p.getBuyer().getId());
+                dto.setBuyerName(p.getBuyer().getFullName());
+                dto.setBuyerEmail(p.getBuyer().getEmail());
+                dto.setBuyerPhone(p.getBuyer().getPhone());
+                if (p.getBuyer().getBuyerProfile() != null) {
+                    dto.setBuyerCompanyName(p.getBuyer().getBuyerProfile().getCompanyName());
+                }
+            }
+        }
+
+        return dto;
+    }
+
     public PaymentDto mapToPaymentDto(Payment p) {
         PaymentDto dto = new PaymentDto();
         dto.setId(p.getId());
@@ -565,15 +618,9 @@ public class PaymentService {
         dto.setUpdatedAt(p.getUpdatedAt());
 
         if (p.getTransactions() != null) {
-            List<PaymentTransactionDto> trxDtos = p.getTransactions().stream().map(t -> new PaymentTransactionDto(
-                    t.getId(),
-                    p.getId(),
-                    t.getTransactionType(),
-                    t.getAmount(),
-                    t.getStatus(),
-                    t.getGatewayReference(),
-                    t.getCreatedAt()
-            )).collect(Collectors.toList());
+            List<PaymentTransactionDto> trxDtos = p.getTransactions().stream()
+                    .map(this::mapToPaymentTransactionDto)
+                    .collect(Collectors.toList());
             dto.setTransactions(trxDtos);
         }
 

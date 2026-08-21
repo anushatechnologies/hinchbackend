@@ -168,7 +168,7 @@ public class InvoiceService {
         return mapToInvoiceDto(saved);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public InvoiceDto getInvoiceByOrderId(Long orderId, Long currentUserId) {
         Invoice invoice = invoiceRepository.findByOrderId(orderId).orElseGet(() -> {
             // Auto-generate if not yet present

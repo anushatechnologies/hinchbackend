@@ -36,4 +36,11 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     long countByOrderStatus(OrderStatus orderStatus);
     Page<Order> findAllByOrderByCreatedAtDesc(Pageable pageable);
+    Page<Order> findByOrderStatusOrderByCreatedAtDesc(OrderStatus orderStatus, Pageable pageable);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.buyer.id = :buyerId")
+    long countOrdersByBuyerId(@Param("buyerId") Long buyerId);
+
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.buyer.id = :buyerId AND o.orderStatus NOT IN ('CANCELLED', 'RETURNED')")
+    BigDecimal calculateBuyerLifetimeSpend(@Param("buyerId") Long buyerId);
 }

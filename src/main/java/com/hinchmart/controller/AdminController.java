@@ -1,13 +1,11 @@
 package com.hinchmart.controller;
 
 import com.hinchmart.dto.request.SellerStatusUpdateRequest;
-import com.hinchmart.dto.response.ApiResponse;
-import com.hinchmart.dto.response.DashboardStatsDto;
-import com.hinchmart.dto.response.ProductDto;
-import com.hinchmart.dto.response.SellerProfileDto;
-import com.hinchmart.dto.response.UserDto;
+import com.hinchmart.dto.response.*;
 import com.hinchmart.entity.enums.ApprovalStatus;
 import com.hinchmart.entity.enums.SellerStatus;
+import com.hinchmart.service.OrderService;
+import com.hinchmart.service.PaymentService;
 import com.hinchmart.service.ProductService;
 import com.hinchmart.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,17 +25,24 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
-@Tag(name = "Admin Operations", description = "Endpoints for Admin Dashboard, Seller Approvals & KYC, Product Approvals, and User Management")
+@Tag(name = "Admin Operations", description = "Endpoints for Admin Dashboard, Buyers Directory, Orders Ledger, Payments Ledger, Seller Approvals & KYC, Product Approvals, and User Management")
 @SecurityRequirement(name = "Bearer Authentication")
 @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
 public class AdminController {
 
     private final UserService userService;
     private final ProductService productService;
+    private final OrderService orderService;
+    private final PaymentService paymentService;
 
-    public AdminController(UserService userService, ProductService productService) {
+    public AdminController(UserService userService,
+                           ProductService productService,
+                           OrderService orderService,
+                           PaymentService paymentService) {
         this.userService = userService;
         this.productService = productService;
+        this.orderService = orderService;
+        this.paymentService = paymentService;
     }
 
     // ==========================================
@@ -183,5 +188,49 @@ public class AdminController {
         boolean active = body.getOrDefault("active", true);
         ProductDto updated = productService.toggleProductActive(id, active);
         return ResponseEntity.ok(ApiResponse.success("Product status updated successfully", updated));
+    }
+
+    // ==========================================
+    // 5. Admin Buyers Directory
+    // ==========================================
+
+    @GetMapping("/buyers")
+    @Operation(summary = "Admin Buyers Directory",
+            description = "Returns paginated list of enterprise buyers with business profile, credit limits, GST verification status, order count, and lifetime procurement spend.")
+    public ResponseEntity<ApiResponse<Page<BuyerDto>>> getAllBuyers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String search) {
+        Page<BuyerDto> buyers = userService.findAllBuyers(page, size, search);
+        return ResponseEntity.ok(ApiResponse.success(buyers));
+    }
+
+    // ==========================================
+    // 6. Global Marketplace Orders Aggregator
+    // ==========================================
+
+    @GetMapping("/orders")
+    @Operation(summary = "Global Marketplace Orders Aggregator",
+            description = "Returns all marketplace transactions across all buyers and sellers simultaneously with pagination and status filter.")
+    public ResponseEntity<ApiResponse<Page<OrderDto>>> getAllMarketplaceOrders(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String status) {
+        Page<OrderDto> orders = orderService.findAllOrders(page, size, status);
+        return ResponseEntity.ok(ApiResponse.success(orders));
+    }
+
+    // ==========================================
+    // 7. Global Payments & Escrow Ledger
+    // ==========================================
+
+    @GetMapping("/payments")
+    @Operation(summary = "Global Payments & Escrow Ledger",
+            description = "Returns the global payment transactions and escrow ledger for admin reconciliation.")
+    public ResponseEntity<ApiResponse<Page<PaymentTransactionDto>>> getPaymentsLedger(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Page<PaymentTransactionDto> transactions = paymentService.getTransactions(page, size);
+        return ResponseEntity.ok(ApiResponse.success(transactions));
     }
 }
