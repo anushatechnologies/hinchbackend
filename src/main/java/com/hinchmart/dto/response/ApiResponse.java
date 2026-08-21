@@ -1,11 +1,15 @@
 package com.hinchmart.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.time.LocalDateTime;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiResponse<T> {
     private boolean success;
     private String message;
     private T data;
+    private ErrorDetails error;
     private LocalDateTime timestamp;
 
     public ApiResponse() {
@@ -19,6 +23,14 @@ public class ApiResponse<T> {
         this.timestamp = LocalDateTime.now();
     }
 
+    public ApiResponse(boolean success, String message, T data, ErrorDetails error) {
+        this.success = success;
+        this.message = message;
+        this.data = data;
+        this.error = error;
+        this.timestamp = LocalDateTime.now();
+    }
+
     public static <T> ApiResponse<T> success(String message, T data) {
         return new ApiResponse<>(true, message, data);
     }
@@ -28,11 +40,27 @@ public class ApiResponse<T> {
     }
 
     public static <T> ApiResponse<T> error(String message) {
-        return new ApiResponse<>(false, message, null);
+        ApiResponse<T> resp = new ApiResponse<>(false, message, null);
+        resp.setError(new ErrorDetails("BAD_REQUEST", message));
+        return resp;
+    }
+
+    public static <T> ApiResponse<T> error(String code, String message) {
+        ApiResponse<T> resp = new ApiResponse<>(false, message, null);
+        resp.setError(new ErrorDetails(code, message));
+        return resp;
+    }
+
+    public static <T> ApiResponse<T> error(String code, String message, Object details) {
+        ApiResponse<T> resp = new ApiResponse<>(false, message, null);
+        resp.setError(new ErrorDetails(code, message, details));
+        return resp;
     }
 
     public static <T> ApiResponse<T> error(String message, T data) {
-        return new ApiResponse<>(false, message, data);
+        ApiResponse<T> resp = new ApiResponse<>(false, message, data);
+        resp.setError(new ErrorDetails("BAD_REQUEST", message, data));
+        return resp;
     }
 
     public boolean isSuccess() {
@@ -57,6 +85,14 @@ public class ApiResponse<T> {
 
     public void setData(T data) {
         this.data = data;
+    }
+
+    public ErrorDetails getError() {
+        return error;
+    }
+
+    public void setError(ErrorDetails error) {
+        this.error = error;
     }
 
     public LocalDateTime getTimestamp() {

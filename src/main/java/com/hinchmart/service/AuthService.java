@@ -5,14 +5,12 @@ import com.hinchmart.dto.request.LoginRequest;
 import com.hinchmart.dto.request.RefreshTokenRequest;
 import com.hinchmart.dto.request.RegisterRequest;
 import com.hinchmart.dto.request.VerifyOtpRequest;
-import com.hinchmart.dto.response.AuthResponse;
-import com.hinchmart.dto.response.BuyerProfileDto;
-import com.hinchmart.dto.response.SellerProfileDto;
-import com.hinchmart.dto.response.UserDto;
+import com.hinchmart.dto.response.*;
 import com.hinchmart.entity.BuyerProfile;
 import com.hinchmart.entity.RefreshToken;
 import com.hinchmart.entity.SellerProfile;
 import com.hinchmart.entity.User;
+import com.hinchmart.entity.VerificationToken;
 import com.hinchmart.entity.enums.AccountStatus;
 import com.hinchmart.entity.enums.Role;
 import com.hinchmart.entity.enums.SellerStatus;
@@ -28,7 +26,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -66,33 +66,75 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new BadRequestException("Email address is already in use: " + request.getEmail());
+        String phone = request.getPhone();
+
+        // 1. If verification token provided (mobile OTP flow), validate and consume it
+        if (request.getVerificationToken() != null && !request.getVerificationToken().trim().isEmpty()) {
+            VerificationToken vToken = otpService.validateVerificationToken(request.getVerificationToken());
+            if (phone == null || phone.trim().isEmpty()) {
+                phone = vToken.getPhone();
+            }
+            otpService.consumeVerificationToken(vToken);
         }
 
-        if (request.getPhone() != null && !request.getPhone().trim().isEmpty() &&
-                userRepository.existsByPhone(request.getPhone())) {
-            throw new BadRequestException("Phone number is already registered: " + request.getPhone());
+        // 2. Validate email / phone uniqueness
+        String email = request.getEmail();
+        if (email == null || email.trim().isEmpty()) {
+            if (phone != null && !phone.trim().isEmpty()) {
+                String cleanPhone = phone.replaceAll("[^0-9]", "");
+                email = cleanPhone + "@user.hinchmart.com";
+            } else {
+                throw new BadRequestException("Email or phone number is required for registration");
+            }
+        }
+
+        if (userRepository.existsByEmail(email)) {
+            throw new BadRequestException("Email address is already in use: " + email);
+        }
+
+        if (phone != null && !phone.trim().isEmpty() && userRepository.existsByPhone(phone)) {
+            throw new BadRequestException("Phone number is already registered: " + phone);
         }
 
         Role role = request.getRole() != null ? request.getRole() : Role.BUYER;
+        String rawPassword = request.getPassword();
+        if (rawPassword == null || rawPassword.trim().isEmpty()) {
+            rawPassword = "User@" + UUID.randomUUID().toString().substring(0, 8);
+        }
+
+        String fullName = request.getFullName();
 
         User user = new User(
-                request.getEmail(),
-                request.getPhone(),
-                passwordEncoder.encode(request.getPassword()),
-                request.getFullName(),
+                email,
+                phone,
+                passwordEncoder.encode(rawPassword),
+                fullName,
                 role,
                 AccountStatus.ACTIVE
         );
 
         User savedUser = userRepository.save(user);
 
-        // Attach Profile based on Role
-        if (role == Role.BUYER) {
+        // Attach Profile based on Role / AccountType
+        if (role == Role.SELLER) {
+            SellerProfile sellerProfile = new SellerProfile(
+                    savedUser,
+                    request.getCompanyName() != null ? request.getCompanyName() : fullName + " Trading Co.",
+                    request.getGstin(),
+                    request.getBusinessType() != null ? request.getBusinessType() : "Distributor",
+                    SellerStatus.PENDING
+            );
+            sellerProfile.setPanNumber(request.getPan());
+            sellerProfile.setWarehouseAddress(request.getAddress());
+            sellerProfile.setCity(request.getCity());
+            sellerProfile.setState(request.getState());
+            sellerProfile.setPincode(request.getPincode());
+            savedUser.setSellerProfile(sellerProfile);
+            sellerProfileRepository.save(sellerProfile);
+        } else {
             BuyerProfile buyerProfile = new BuyerProfile(
                     savedUser,
-                    request.getCompanyName() != null ? request.getCompanyName() : request.getFullName() + " Enterprise",
+                    request.getCompanyName() != null ? request.getCompanyName() : fullName + " Enterprise",
                     request.getGstin(),
                     request.getBusinessType() != null ? request.getBusinessType() : "Commercial Buyer"
             );
@@ -101,23 +143,9 @@ public class AuthService {
             buyerProfile.setCity(request.getCity());
             buyerProfile.setState(request.getState());
             buyerProfile.setPincode(request.getPincode());
+            buyerProfile.setCreditLimit(new BigDecimal("500000.00")); // default credit limit
             savedUser.setBuyerProfile(buyerProfile);
             buyerProfileRepository.save(buyerProfile);
-        } else if (role == Role.SELLER) {
-            SellerProfile sellerProfile = new SellerProfile(
-                    savedUser,
-                    request.getCompanyName() != null ? request.getCompanyName() : request.getFullName() + " Trading Co.",
-                    request.getGstin(),
-                    request.getBusinessType() != null ? request.getBusinessType() : "Distributor",
-                    SellerStatus.PENDING
-            );
-            sellerProfile.setPanNumber(request.getPanNumber());
-            sellerProfile.setWarehouseAddress(request.getAddress());
-            sellerProfile.setCity(request.getCity());
-            sellerProfile.setState(request.getState());
-            sellerProfile.setPincode(request.getPincode());
-            savedUser.setSellerProfile(sellerProfile);
-            sellerProfileRepository.save(sellerProfile);
         }
 
         String accessToken = tokenProvider.generateToken(savedUser);
@@ -166,11 +194,43 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResponse verifyOtpAndLogin(VerifyOtpRequest request) {
-        otpService.verifyOtp(request.getIdentifier(), request.getOtpCode(), request.getPurpose());
+    public VerifyOtpResponse verifyOtp(VerifyOtpRequest request) {
+        String identifier = request.getPhone() != null ? request.getPhone() : request.getIdentifier();
+        String otpCode = request.getOtp() != null ? request.getOtp() : request.getOtpCode();
 
-        User user = userRepository.findByEmailOrPhone(request.getIdentifier(), request.getIdentifier())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found for identifier: " + request.getIdentifier()));
+        otpService.verifyOtp(identifier, otpCode, request.getPurpose());
+
+        Optional<User> userOpt = userRepository.findByEmailOrPhone(identifier, identifier);
+
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            String accessToken = tokenProvider.generateToken(user);
+            RefreshToken refreshToken = createRefreshToken(user);
+
+            activityLogService.log(user.getId(), user.getEmail(), "USER_OTP_LOGIN", "USER", user.getId(),
+                    "Logged in via OTP verification", null);
+
+            return VerifyOtpResponse.existingUser(
+                    accessToken,
+                    refreshToken.getToken(),
+                    tokenProvider.getExpirationMs() / 1000,
+                    mapToUserDto(user)
+            );
+        } else {
+            String verificationToken = otpService.createVerificationToken(identifier);
+            return VerifyOtpResponse.newUser(verificationToken);
+        }
+    }
+
+    @Transactional
+    public AuthResponse verifyOtpAndLogin(VerifyOtpRequest request) {
+        String identifier = request.getPhone() != null ? request.getPhone() : request.getIdentifier();
+        String otpCode = request.getOtp() != null ? request.getOtp() : request.getOtpCode();
+
+        otpService.verifyOtp(identifier, otpCode, request.getPurpose());
+
+        User user = userRepository.findByEmailOrPhone(identifier, identifier)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found for identifier: " + identifier));
 
         String accessToken = tokenProvider.generateToken(user);
         RefreshToken refreshToken = createRefreshToken(user);
@@ -245,44 +305,96 @@ public class AuthService {
         dto.setEmail(user.getEmail());
         dto.setPhone(user.getPhone());
         dto.setFullName(user.getFullName());
+
+        // Parse firstName and lastName
+        String fullName = user.getFullName() != null ? user.getFullName().trim() : "";
+        if (fullName.contains(" ")) {
+            String[] parts = fullName.split("\\s+", 2);
+            dto.setFirstName(parts[0]);
+            dto.setLastName(parts[1]);
+        } else {
+            dto.setFirstName(fullName);
+            dto.setLastName("");
+        }
+
         dto.setRole(user.getRole());
         dto.setStatus(user.getStatus());
         dto.setCreatedAt(user.getCreatedAt());
 
-        if (user.getBuyerProfile() != null) {
-            BuyerProfile bp = user.getBuyerProfile();
-            BuyerProfileDto bpDto = new BuyerProfileDto();
-            bpDto.setId(bp.getId());
-            bpDto.setCompanyName(bp.getCompanyName());
-            bpDto.setGstin(bp.getGstin());
-            bpDto.setBusinessType(bp.getBusinessType());
-            bpDto.setBillingAddress(bp.getBillingAddress());
-            bpDto.setShippingAddress(bp.getShippingAddress());
-            bpDto.setCity(bp.getCity());
-            bpDto.setState(bp.getState());
-            bpDto.setPincode(bp.getPincode());
-            bpDto.setCreditLimit(bp.getCreditLimit());
-            bpDto.setAnnualTurnover(bp.getAnnualTurnover());
-            dto.setBuyerProfile(bpDto);
-        }
+        // Verification Flags
+        dto.setVerified(user.getStatus() == AccountStatus.ACTIVE);
+        dto.setPhoneVerified(user.getPhone() != null && !user.getPhone().trim().isEmpty());
+        dto.setEmailVerified(user.getEmail() != null && !user.getEmail().trim().isEmpty());
 
-        if (user.getSellerProfile() != null) {
-            SellerProfile sp = user.getSellerProfile();
-            SellerProfileDto spDto = new SellerProfileDto();
-            spDto.setId(sp.getId());
-            spDto.setCompanyName(sp.getCompanyName());
-            spDto.setGstin(sp.getGstin());
-            spDto.setPanNumber(sp.getPanNumber());
-            spDto.setBusinessType(sp.getBusinessType());
-            spDto.setWarehouseAddress(sp.getWarehouseAddress());
-            spDto.setCity(sp.getCity());
-            spDto.setState(sp.getState());
-            spDto.setPincode(sp.getPincode());
-            spDto.setRating(sp.getRating());
-            spDto.setStatus(sp.getStatus());
-            spDto.setRejectionReason(sp.getRejectionReason());
-            spDto.setVerifiedAt(sp.getVerifiedAt());
-            dto.setSellerProfile(spDto);
+        // Compute Account Type & Business Profile
+        if (user.getRole() == Role.SELLER) {
+            dto.setAccountType("vendor");
+            if (user.getSellerProfile() != null) {
+                SellerProfile sp = user.getSellerProfile();
+                SellerProfileDto spDto = new SellerProfileDto();
+                spDto.setId(sp.getId());
+                spDto.setCompanyName(sp.getCompanyName());
+                spDto.setGstin(sp.getGstin());
+                spDto.setPanNumber(sp.getPanNumber());
+                spDto.setBusinessType(sp.getBusinessType());
+                spDto.setWarehouseAddress(sp.getWarehouseAddress());
+                spDto.setCity(sp.getCity());
+                spDto.setState(sp.getState());
+                spDto.setPincode(sp.getPincode());
+                spDto.setRating(sp.getRating());
+                spDto.setStatus(sp.getStatus());
+                spDto.setRejectionReason(sp.getRejectionReason());
+                spDto.setVerifiedAt(sp.getVerifiedAt());
+                dto.setSellerProfile(spDto);
+
+                BusinessProfileDto bpDto = new BusinessProfileDto(
+                        sp.getCompanyName() != null ? sp.getCompanyName() : user.getFullName() + " Trading Co.",
+                        sp.getGstin() != null ? sp.getGstin() : "",
+                        sp.getPanNumber() != null ? sp.getPanNumber() : (sp.getGstin() != null ? sp.getGstin() : ""),
+                        sp.getStatus() == SellerStatus.APPROVED
+                );
+                dto.setBusinessProfile(bpDto);
+            } else {
+                dto.setBusinessProfile(new BusinessProfileDto(user.getFullName() + " Trading Co.", "", "", false));
+            }
+        } else {
+            // Buyer Role
+            if (user.getBuyerProfile() != null) {
+                BuyerProfile bp = user.getBuyerProfile();
+                BuyerProfileDto bpDto = new BuyerProfileDto();
+                bpDto.setId(bp.getId());
+                bpDto.setCompanyName(bp.getCompanyName());
+                bpDto.setGstin(bp.getGstin());
+                bpDto.setBusinessType(bp.getBusinessType());
+                bpDto.setBillingAddress(bp.getBillingAddress());
+                bpDto.setShippingAddress(bp.getShippingAddress());
+                bpDto.setCity(bp.getCity());
+                bpDto.setState(bp.getState());
+                bpDto.setPincode(bp.getPincode());
+                bpDto.setCreditLimit(bp.getCreditLimit());
+                bpDto.setAnnualTurnover(bp.getAnnualTurnover());
+                dto.setBuyerProfile(bpDto);
+
+                String bt = bp.getBusinessType() != null ? bp.getBusinessType().toLowerCase() : "business";
+                if (bt.contains("contractor") || bt.contains("builder")) {
+                    dto.setAccountType("contractor");
+                } else if (bt.contains("individual") || bt.contains("retail") || bt.contains("home")) {
+                    dto.setAccountType("individual");
+                } else {
+                    dto.setAccountType("business");
+                }
+
+                BusinessProfileDto busDto = new BusinessProfileDto(
+                        bp.getCompanyName() != null ? bp.getCompanyName() : user.getFullName() + " Enterprise",
+                        bp.getGstin() != null ? bp.getGstin() : "",
+                        bp.getGstin() != null ? bp.getGstin() : "",
+                        bp.getGstin() != null && !bp.getGstin().trim().isEmpty()
+                );
+                dto.setBusinessProfile(busDto);
+            } else {
+                dto.setAccountType("business");
+                dto.setBusinessProfile(new BusinessProfileDto(user.getFullName() + " Enterprise", "", "", false));
+            }
         }
 
         return dto;

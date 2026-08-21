@@ -1,32 +1,24 @@
 package com.hinchmart.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.hinchmart.entity.enums.Role;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 
 public class RegisterRequest {
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Invalid email format")
-    private String email;
-
-    private String phone;
-
-    @NotBlank(message = "Password is required")
-    @Size(min = 6, message = "Password must be at least 6 characters")
-    private String password;
-
-    @NotBlank(message = "Full name is required")
+    private String verificationToken;
+    private String firstName;
+    private String lastName;
     private String fullName;
+    private String email;
+    private String phone;
+    private String password;
+    private String accountType; // "individual", "business", "contractor", "vendor"
+    private Role role;
 
-    @NotNull(message = "Role is required (BUYER, SELLER, etc.)")
-    private Role role = Role.BUYER;
-
-    // Optional profile fields populated upon registration
+    // Profile fields
     private String companyName;
     private String gstin;
+    private String pan;
     private String panNumber;
     private String businessType;
     private String address;
@@ -35,6 +27,44 @@ public class RegisterRequest {
     private String pincode;
 
     public RegisterRequest() {
+    }
+
+    public String getVerificationToken() {
+        return verificationToken;
+    }
+
+    public void setVerificationToken(String verificationToken) {
+        this.verificationToken = verificationToken;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public String getFullName() {
+        if (fullName != null && !fullName.trim().isEmpty()) {
+            return fullName.trim();
+        }
+        if (firstName != null && !firstName.trim().isEmpty()) {
+            return (firstName.trim() + (lastName != null && !lastName.trim().isEmpty() ? " " + lastName.trim() : "")).trim();
+        }
+        return "HinchMart User";
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
     }
 
     public String getEmail() {
@@ -61,16 +91,29 @@ public class RegisterRequest {
         this.password = password;
     }
 
-    public String getFullName() {
-        return fullName;
+    public String getAccountType() {
+        return accountType;
     }
 
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
+    public void setAccountType(String accountType) {
+        this.accountType = accountType;
+        if (this.role == null) {
+            if ("vendor".equalsIgnoreCase(accountType) || "seller".equalsIgnoreCase(accountType)) {
+                this.role = Role.SELLER;
+            } else {
+                this.role = Role.BUYER;
+            }
+        }
     }
 
     public Role getRole() {
-        return role;
+        if (role != null) {
+            return role;
+        }
+        if (accountType != null && ("vendor".equalsIgnoreCase(accountType) || "seller".equalsIgnoreCase(accountType))) {
+            return Role.SELLER;
+        }
+        return Role.BUYER;
     }
 
     public void setRole(Role role) {
@@ -93,16 +136,36 @@ public class RegisterRequest {
         this.gstin = gstin;
     }
 
+    public String getPan() {
+        return pan != null && !pan.trim().isEmpty() ? pan.trim() : (panNumber != null ? panNumber.trim() : null);
+    }
+
+    public void setPan(String pan) {
+        this.pan = pan;
+        if (this.panNumber == null) {
+            this.panNumber = pan;
+        }
+    }
+
     public String getPanNumber() {
-        return panNumber;
+        return panNumber != null && !panNumber.trim().isEmpty() ? panNumber.trim() : (pan != null ? pan.trim() : null);
     }
 
     public void setPanNumber(String panNumber) {
         this.panNumber = panNumber;
+        if (this.pan == null) {
+            this.pan = panNumber;
+        }
     }
 
     public String getBusinessType() {
-        return businessType;
+        if (businessType != null && !businessType.trim().isEmpty()) {
+            return businessType;
+        }
+        if (accountType != null && !accountType.trim().isEmpty()) {
+            return accountType;
+        }
+        return "Business";
     }
 
     public void setBusinessType(String businessType) {

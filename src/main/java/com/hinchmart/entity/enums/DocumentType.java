@@ -6,6 +6,8 @@ public enum DocumentType {
     CANCELLED_CHEQUE,
     BUSINESS_PROOF,
     MSME_CERTIFICATE,
+    MSME,
+    INCORPORATION,
     TRADE_LICENSE,
     OTHER
 }

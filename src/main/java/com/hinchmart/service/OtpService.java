@@ -1,11 +1,15 @@
 package com.hinchmart.service;
 
+import com.hinchmart.dto.request.SendOtpRequest;
+import com.hinchmart.dto.response.SendOtpResponse;
 import com.hinchmart.entity.OtpVerification;
 import com.hinchmart.entity.User;
+import com.hinchmart.entity.VerificationToken;
 import com.hinchmart.entity.enums.OtpPurpose;
 import com.hinchmart.exception.BadRequestException;
 import com.hinchmart.repository.OtpVerificationRepository;
 import com.hinchmart.repository.UserRepository;
+import com.hinchmart.repository.VerificationTokenRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class OtpService {
@@ -22,11 +27,12 @@ public class OtpService {
     private static final Logger logger = LoggerFactory.getLogger(OtpService.class);
 
     private final OtpVerificationRepository otpVerificationRepository;
+    private final VerificationTokenRepository verificationTokenRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
     private final SmsService smsService;
 
-    @Value("${hinchmart.otp.expiration-minutes:10}")
+    @Value("${hinchmart.otp.expiration-minutes:5}")
     private int expirationMinutes;
 
     @Value("${hinchmart.otp.mock-mode:false}")
@@ -36,13 +42,53 @@ public class OtpService {
     private String defaultTestCode;
 
     public OtpService(OtpVerificationRepository otpVerificationRepository,
+                      VerificationTokenRepository verificationTokenRepository,
                       UserRepository userRepository,
                       EmailService emailService,
                       SmsService smsService) {
         this.otpVerificationRepository = otpVerificationRepository;
+        this.verificationTokenRepository = verificationTokenRepository;
         this.userRepository = userRepository;
         this.emailService = emailService;
         this.smsService = smsService;
+    }
+
+    /**
+     * Formats phone number for user-facing messaging (e.g. "+91 98765 43210")
+     */
+    public String formatPhoneForDisplay(String phone) {
+        if (phone == null) return "";
+        String clean = phone.trim();
+        if (clean.startsWith("+91") && clean.length() == 13) {
+            return "+91 " + clean.substring(3, 8) + " " + clean.substring(8);
+        } else if (clean.length() == 10) {
+            return "+91 " + clean.substring(0, 5) + " " + clean.substring(5);
+        }
+        return clean;
+    }
+
+    /**
+     * Generates a cryptographically secure 6-digit OTP and dispatches it via Real Email and/or Real SMS.
+     * Returns structured SendOtpResponse with countdown timers.
+     */
+    @Transactional
+    public SendOtpResponse sendOtp(SendOtpRequest request) {
+        String identifier = request.getPhone() != null ? request.getPhone() : request.getIdentifier();
+        if (identifier == null || identifier.trim().isEmpty()) {
+            throw new BadRequestException("Phone number or email is required");
+        }
+
+        String otpCode = generateAndSendOtp(identifier, request.getPurpose());
+        String displayIdentifier = formatPhoneForDisplay(identifier);
+        int expiresInSeconds = expirationMinutes * 60;
+        int resendAfterSeconds = 60;
+
+        return new SendOtpResponse(
+                true,
+                "OTP sent successfully to " + displayIdentifier,
+                expiresInSeconds,
+                resendAfterSeconds
+        );
     }
 
     /**
@@ -103,6 +149,13 @@ public class OtpService {
 
     @Transactional
     public boolean verifyOtp(String identifier, String otpCode, OtpPurpose purpose) {
+        if (identifier == null || identifier.trim().isEmpty()) {
+            throw new BadRequestException("Phone number or email is required");
+        }
+        if (otpCode == null || otpCode.trim().isEmpty()) {
+            throw new BadRequestException("OTP code is required");
+        }
+
         String cleanIdentifier = identifier.trim();
         String cleanOtp = otpCode.trim();
 
@@ -118,19 +171,48 @@ public class OtpService {
         }
 
         if (otp == null) {
-            throw new BadRequestException("Invalid or expired OTP code.");
+            throw new BadRequestException("The OTP entered is incorrect or has expired. Please request a new code.");
         }
 
         if (otp.isExpired()) {
-            throw new BadRequestException("OTP code has expired. Please request a new one.");
+            throw new BadRequestException("The OTP entered is incorrect or has expired. Please request a new code.");
         }
 
-        if (purpose != null && otp.getPurpose() != purpose) {
+        if (purpose != null && otp.getPurpose() != purpose && otp.getPurpose() != OtpPurpose.VERIFICATION) {
             throw new BadRequestException("OTP was not issued for the requested action.");
         }
 
         otp.setUsed(true);
         otpVerificationRepository.save(otp);
         return true;
+    }
+
+    @Transactional
+    public String createVerificationToken(String phone) {
+        String tokenStr = "ver_tok_" + UUID.randomUUID().toString().replace("-", "");
+        LocalDateTime expiry = LocalDateTime.now().plusMinutes(30); // 30 minutes to complete registration
+        VerificationToken token = new VerificationToken(tokenStr, phone.trim(), expiry);
+        verificationTokenRepository.save(token);
+        return tokenStr;
+    }
+
+    @Transactional(readOnly = true)
+    public VerificationToken validateVerificationToken(String tokenStr) {
+        if (tokenStr == null || tokenStr.trim().isEmpty()) {
+            throw new BadRequestException("Verification token is required for registration");
+        }
+        VerificationToken token = verificationTokenRepository.findByTokenAndIsUsedFalse(tokenStr.trim())
+                .orElseThrow(() -> new BadRequestException("Invalid or already used verification token. Please verify your phone number again."));
+
+        if (token.isExpired()) {
+            throw new BadRequestException("Verification token has expired. Please verify your phone number again.");
+        }
+        return token;
+    }
+
+    @Transactional
+    public void consumeVerificationToken(VerificationToken token) {
+        token.setUsed(true);
+        verificationTokenRepository.save(token);
     }
 }

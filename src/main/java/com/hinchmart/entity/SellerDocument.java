@@ -25,6 +25,12 @@ public class SellerDocument {
     @Column(name = "document_type", nullable = false, length = 50)
     private DocumentType documentType = DocumentType.GST_CERTIFICATE;
 
+    @Column(name = "file_name", length = 255)
+    private String fileName;
+
+    @Column(name = "file_size", length = 50)
+    private String fileSize;
+
     @Column(name = "document_url", nullable = false, length = 500)
     private String documentUrl;
 
@@ -34,6 +40,9 @@ public class SellerDocument {
     @Enumerated(EnumType.STRING)
     @Column(name = "verification_status", nullable = false, length = 30)
     private ApprovalStatus verificationStatus = ApprovalStatus.PENDING;
+
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    private String rejectionReason;
 
     @Column(name = "verified_at")
     private LocalDateTime verifiedAt;
@@ -49,6 +58,17 @@ public class SellerDocument {
         this.documentType = documentType;
         this.documentUrl = documentUrl;
         this.documentNumber = documentNumber;
+        this.fileName = documentType != null ? documentType.name().toLowerCase() + ".pdf" : "document.pdf";
+        this.fileSize = "1.0 MB";
+        this.verificationStatus = ApprovalStatus.PENDING;
+    }
+
+    public SellerDocument(SellerProfile sellerProfile, DocumentType documentType, String documentUrl, String fileName, String fileSize) {
+        this.sellerProfile = sellerProfile;
+        this.documentType = documentType;
+        this.documentUrl = documentUrl;
+        this.fileName = fileName;
+        this.fileSize = fileSize;
         this.verificationStatus = ApprovalStatus.PENDING;
     }
 
@@ -81,6 +101,22 @@ public class SellerDocument {
         this.documentType = documentType;
     }
 
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public String getFileSize() {
+        return fileSize;
+    }
+
+    public void setFileSize(String fileSize) {
+        this.fileSize = fileSize;
+    }
+
     public String getDocumentUrl() {
         return documentUrl;
     }
@@ -103,6 +139,14 @@ public class SellerDocument {
 
     public void setVerificationStatus(ApprovalStatus verificationStatus) {
         this.verificationStatus = verificationStatus;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
     }
 
     public Boolean getVerified() {

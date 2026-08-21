@@ -33,27 +33,72 @@ public class SellerProfile {
     private String panNumber;
 
     @Column(name = "business_type", length = 50)
-    private String businessType; // Manufacturer, Authorized Distributor, Wholesaler, Stockist
+    private String businessType; // Manufacturer, Authorized Distributor, Wholesaler, Stockist, Retailer, Dealer
 
-    @Column(name = "warehouse_address", columnDefinition = "TEXT")
-    private String warehouseAddress;
+    @Column(name = "established_year")
+    private Integer establishedYear;
 
+    @Column(name = "employee_count", length = 50)
+    private String employeeCount; // 1-10, 10-50, 50-100, 100+
+
+    @Column(length = 255)
+    private String website;
+
+    @Column(name = "company_email", length = 150)
+    private String companyEmail;
+
+    @Column(name = "business_phone", length = 30)
+    private String businessPhone;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    // Address fields
     @Column(length = 60)
-    private String city;
+    private String country = "India";
 
     @Column(length = 60)
     private String state;
 
+    @Column(length = 60)
+    private String district;
+
+    @Column(length = 60)
+    private String city;
+
+    @Column(length = 255)
+    private String area;
+
     @Column(length = 10)
     private String pincode;
+
+    @Column(name = "complete_address", columnDefinition = "TEXT")
+    private String completeAddress;
+
+    @Column(name = "warehouse_address", columnDefinition = "TEXT")
+    private String warehouseAddress;
+
+    // Legal details
+    @Column(length = 50)
+    private String cin;
+
+    @Column(name = "trade_license", length = 100)
+    private String tradeLicense;
+
+    @Column(length = 50)
+    private String msme;
 
     @Column(name = "rating")
     private Double rating = 4.5;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    private SellerStatus status = SellerStatus.PENDING;
+    private SellerStatus status = SellerStatus.DRAFT;
 
+    @Column(name = "completion_percentage")
+    private Integer completionPercentage = 25;
+
+    // Bank details
     @Column(name = "bank_account_number", length = 35)
     private String bankAccountNumber;
 
@@ -89,13 +134,17 @@ public class SellerProfile {
         this.companyName = companyName;
         this.gstin = gstin;
         this.businessType = businessType;
-        this.status = status != null ? status : SellerStatus.PENDING;
+        this.status = status != null ? status : SellerStatus.DRAFT;
+        this.completionPercentage = 25;
     }
 
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        if (this.completionPercentage == null) {
+            this.completionPercentage = 25;
+        }
     }
 
     @PreUpdate
@@ -151,20 +200,60 @@ public class SellerProfile {
         this.businessType = businessType;
     }
 
-    public String getWarehouseAddress() {
-        return warehouseAddress;
+    public Integer getEstablishedYear() {
+        return establishedYear;
     }
 
-    public void setWarehouseAddress(String warehouseAddress) {
-        this.warehouseAddress = warehouseAddress;
+    public void setEstablishedYear(Integer establishedYear) {
+        this.establishedYear = establishedYear;
     }
 
-    public String getCity() {
-        return city;
+    public String getEmployeeCount() {
+        return employeeCount;
     }
 
-    public void setCity(String city) {
-        this.city = city;
+    public void setEmployeeCount(String employeeCount) {
+        this.employeeCount = employeeCount;
+    }
+
+    public String getWebsite() {
+        return website;
+    }
+
+    public void setWebsite(String website) {
+        this.website = website;
+    }
+
+    public String getCompanyEmail() {
+        return companyEmail;
+    }
+
+    public void setCompanyEmail(String companyEmail) {
+        this.companyEmail = companyEmail;
+    }
+
+    public String getBusinessPhone() {
+        return businessPhone;
+    }
+
+    public void setBusinessPhone(String businessPhone) {
+        this.businessPhone = businessPhone;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
     }
 
     public String getState() {
@@ -175,12 +264,76 @@ public class SellerProfile {
         this.state = state;
     }
 
+    public String getDistrict() {
+        return district;
+    }
+
+    public void setDistrict(String district) {
+        this.district = district;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public String getArea() {
+        return area;
+    }
+
+    public void setArea(String area) {
+        this.area = area;
+    }
+
     public String getPincode() {
         return pincode;
     }
 
     public void setPincode(String pincode) {
         this.pincode = pincode;
+    }
+
+    public String getCompleteAddress() {
+        return completeAddress;
+    }
+
+    public void setCompleteAddress(String completeAddress) {
+        this.completeAddress = completeAddress;
+    }
+
+    public String getWarehouseAddress() {
+        return warehouseAddress;
+    }
+
+    public void setWarehouseAddress(String warehouseAddress) {
+        this.warehouseAddress = warehouseAddress;
+    }
+
+    public String getCin() {
+        return cin;
+    }
+
+    public void setCin(String cin) {
+        this.cin = cin;
+    }
+
+    public String getTradeLicense() {
+        return tradeLicense;
+    }
+
+    public void setTradeLicense(String tradeLicense) {
+        this.tradeLicense = tradeLicense;
+    }
+
+    public String getMsme() {
+        return msme;
+    }
+
+    public void setMsme(String msme) {
+        this.msme = msme;
     }
 
     public Double getRating() {
@@ -197,6 +350,14 @@ public class SellerProfile {
 
     public void setStatus(SellerStatus status) {
         this.status = status;
+    }
+
+    public Integer getCompletionPercentage() {
+        return completionPercentage != null ? completionPercentage : 25;
+    }
+
+    public void setCompletionPercentage(Integer completionPercentage) {
+        this.completionPercentage = completionPercentage;
     }
 
     public String getBankAccountNumber() {

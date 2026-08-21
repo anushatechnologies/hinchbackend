@@ -46,22 +46,22 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
             .authorizeHttpRequests(auth -> auth
-                // Public Auth Endpoints
-                .requestMatchers("/api/auth/**").permitAll()
+                // Public Auth Endpoints (v1 & default)
+                .requestMatchers("/api/auth/**", "/api/v1/auth/**").permitAll()
                 // Public Catalog Endpoints
-                .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/subcategories/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/brands/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/categories/**", "/api/v1/categories/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/subcategories/**", "/api/v1/subcategories/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/brands/**", "/api/v1/brands/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/v1/products/**").permitAll()
                 // Public Payment Gateway Config & Webhook Callbacks
-                .requestMatchers(HttpMethod.GET, "/api/payments/config").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/payments/webhook").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/payments/config", "/api/v1/payments/config").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/payments/webhook", "/api/v1/payments/webhook").permitAll()
                 // Swagger / OpenAPI UI Documentation
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                 // Admin Endpoints
-                .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+                .requestMatchers("/api/admin/**", "/api/v1/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
                 // Seller Endpoints
-                .requestMatchers("/api/seller/**").hasAnyRole("SELLER", "ADMIN", "SUPER_ADMIN")
+                .requestMatchers("/api/seller/**", "/api/v1/seller/**").hasAnyRole("SELLER", "SELLER_ADMIN", "SELLER_STAFF", "ADMIN", "SUPER_ADMIN")
                 // All other endpoints require authentication
                 .anyRequest().authenticated()
             );
