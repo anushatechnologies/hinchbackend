@@ -1,12 +1,16 @@
 @echo off
 setlocal enabledelayedexpansion
 title GitHub Push - HinchMart Backend
+
+for /f "tokens=*" %%i in ('git rev-parse --abbrev-ref HEAD') do set CURRENT_BRANCH=%%i
+if "%CURRENT_BRANCH%"=="" set CURRENT_BRANCH=pavansai/backend-updates
+
 cls
 echo ======================================================================
 echo                HINCHMART BACKEND - GITHUB PUSH WIZARD
 echo ======================================================================
 echo Repository: https://github.com/anushatechnologies/hinchbackend.git
-echo Branch:     pavansai/feature-branch
+echo Branch:     %CURRENT_BRANCH%
 echo.
 echo NOTE: GitHub requires a Personal Access Token (PAT) instead of your
 echo       regular password. If you need to generate one:
@@ -33,17 +37,17 @@ if "%GITHUB_TOKEN%"=="" (
 
 echo.
 echo ----------------------------------------------------------------------
-echo Pushing code to https://github.com/anushatechnologies/hinchbackend.git (branch: pavansai/feature-branch) ...
+echo Pushing code to https://github.com/anushatechnologies/hinchbackend.git (branch: %CURRENT_BRANCH%) ...
 echo ----------------------------------------------------------------------
 echo.
 
-git push https://%GITHUB_USER%:%GITHUB_TOKEN%@github.com/anushatechnologies/hinchbackend.git pavansai/feature-branch
+git push -u https://%GITHUB_USER%:%GITHUB_TOKEN%@github.com/anushatechnologies/hinchbackend.git %CURRENT_BRANCH%
 
 echo.
 if %errorlevel% equ 0 (
     echo ==================================================================
     echo [SUCCESS] All code has been successfully pushed to GitHub!
-    echo Check it at: https://github.com/anushatechnologies/hinchbackend/tree/pavansai/feature-branch
+    echo Check it at: https://github.com/anushatechnologies/hinchbackend/tree/%CURRENT_BRANCH%
     echo ==================================================================
 ) else (
     echo ==================================================================
@@ -55,4 +59,5 @@ if %errorlevel% equ 0 (
 
 echo.
 pause
+
 
