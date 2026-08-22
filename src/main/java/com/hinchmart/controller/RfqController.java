@@ -73,7 +73,7 @@ public class RfqController {
         return ResponseEntity.ok(ApiResponse.success(rfq));
     }
 
-    @GetMapping
+    @GetMapping({"/all", "/marketplace"})
     @PreAuthorize("hasAnyRole('SELLER', 'ADMIN', 'SUPER_ADMIN')")
     @Operation(summary = "List all Marketplace RFQs (Seller / Admin)", description = "Returns all marketplace RFQs with pagination for sellers to bid/quote.")
     public ResponseEntity<ApiResponse<Page<RfqDto>>> getAllRfqs(

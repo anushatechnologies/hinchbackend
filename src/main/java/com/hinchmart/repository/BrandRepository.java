@@ -11,6 +11,7 @@ import java.util.Optional;
 public interface BrandRepository extends JpaRepository<Brand, Long> {
     Optional<Brand> findBySlug(String slug);
     Optional<Brand> findByName(String name);
+    List<Brand> findByIsActiveTrue();
     List<Brand> findByIsActiveTrueOrderByNameAsc();
     boolean existsByName(String name);
 }

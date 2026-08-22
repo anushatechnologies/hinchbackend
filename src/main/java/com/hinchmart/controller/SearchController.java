@@ -58,7 +58,7 @@ public class SearchController {
         );
 
         List<String> suggestions = matchingProducts.getContent().stream()
-                .map(Product::getTitle)
+                .map(Product::getProductName)
                 .distinct()
                 .limit(6)
                 .collect(Collectors.toList());
