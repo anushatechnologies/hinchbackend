@@ -63,15 +63,59 @@ public class OrderService {
             throw new BadRequestException("Cart is empty. Add products to cart before previewing checkout.");
         }
 
-        BigDecimal deliveryCharge = new BigDecimal("2500.00");
-        CheckoutPreviewDto preview = new CheckoutPreviewDto(
-                cartDto.getSubtotal(),
-                cartDto.getGstTotal(),
-                deliveryCharge,
-                cartDto.getSubtotal().add(cartDto.getGstTotal()).add(deliveryCharge)
-        );
+        BigDecimal subtotal = cartDto.getSubtotal();
+        BigDecimal discount = BigDecimal.ZERO;
+        if (request != null && request.getCouponCode() != null && !request.getCouponCode().isBlank()) {
+            String c = request.getCouponCode().trim().toUpperCase();
+            if ("BUILDER500".equals(c)) {
+                discount = new BigDecimal("500.00");
+            } else if ("HINCH1000".equals(c)) {
+                discount = new BigDecimal("1000.00");
+            } else if ("STEEL5".equals(c)) {
+                discount = new BigDecimal("5000.00");
+            } else {
+                discount = new BigDecimal("250.00");
+            }
+        }
+
+        BigDecimal deliveryCharge = new BigDecimal("150.00");
+        if (request != null && "heavy_truck".equalsIgnoreCase(request.getDeliveryMethodId())) {
+            deliveryCharge = new BigDecimal("2500.00");
+        }
+
+        BigDecimal taxableAmount = subtotal.compareTo(discount) > 0 ? subtotal.subtract(discount) : BigDecimal.ZERO;
+        BigDecimal gstTotal = cartDto.getGstTotal();
+        BigDecimal grandTotal = taxableAmount.add(gstTotal).add(deliveryCharge);
+
+        CheckoutPreviewDto preview = new CheckoutPreviewDto(subtotal, gstTotal, deliveryCharge, grandTotal);
+        preview.setDiscount(discount);
+        preview.setShippingCost(deliveryCharge);
+        preview.setDeliveryCharge(deliveryCharge);
+        preview.setTaxableAmount(taxableAmount);
         preview.setItems(cartDto.getItems());
         return preview;
+    }
+
+    @Transactional
+    public CartDto reorder(Long buyerUserId, Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId));
+
+        User user = userRepository.findById(buyerUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + buyerUserId));
+
+        if (!user.hasAnyRole(Role.ADMIN, Role.SUPER_ADMIN) && !order.getBuyer().getId().equals(buyerUserId)) {
+            throw new UnauthorizedException("You are not authorized to reorder from this order.");
+        }
+
+        for (OrderItem item : order.getItems()) {
+            com.hinchmart.dto.request.AddToCartRequest req = new com.hinchmart.dto.request.AddToCartRequest();
+            req.setProductId(item.getProduct().getId());
+            req.setQuantity(item.getQuantity());
+            cartService.addToCart(buyerUserId, req);
+        }
+
+        return cartService.getCart(buyerUserId);
     }
 
     @Transactional

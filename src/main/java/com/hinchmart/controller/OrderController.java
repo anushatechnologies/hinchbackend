@@ -94,4 +94,15 @@ public class OrderController {
         OrderDto updated = orderService.updateOrderStatus(id, user.getId(), request);
         return ResponseEntity.ok(ApiResponse.success("Order status updated to " + request.getStatus().name(), updated));
     }
+
+    @PostMapping("/{id}/reorder")
+    @PreAuthorize("hasAnyRole('BUYER', 'ADMIN', 'SUPER_ADMIN')")
+    @Operation(summary = "Reorder Past Order", description = "Clones all items and quantities from a past order directly into the active shopping cart.")
+    public ResponseEntity<ApiResponse<com.hinchmart.dto.response.CartDto>> reorder(
+            Authentication authentication,
+            @PathVariable Long id) {
+        User user = authService.getCurrentUser(authentication.getName());
+        com.hinchmart.dto.response.CartDto cart = orderService.reorder(user.getId(), id);
+        return ResponseEntity.ok(ApiResponse.success("Items cloned to cart successfully", cart));
+    }
 }

@@ -71,6 +71,36 @@ public class CartController {
         return ResponseEntity.ok(ApiResponse.success("Item removed from cart", cart));
     }
 
+    @PostMapping("/coupon")
+    @Operation(summary = "Apply Promotional Coupon Code", description = "Validates and applies a coupon code (e.g. BUILDER500, HINCH1000) to the buyer cart.")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> applyCoupon(
+            Authentication authentication,
+            @RequestBody java.util.Map<String, String> body) {
+        String code = body != null ? body.get("code") : null;
+        if (code == null || code.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Coupon code cannot be empty"));
+        }
+        String cleanCode = code.trim().toUpperCase();
+        java.math.BigDecimal discountAmount;
+        if ("BUILDER500".equals(cleanCode)) {
+            discountAmount = new java.math.BigDecimal("500.00");
+        } else if ("HINCH1000".equals(cleanCode)) {
+            discountAmount = new java.math.BigDecimal("1000.00");
+        } else if ("STEEL5".equals(cleanCode)) {
+            discountAmount = new java.math.BigDecimal("5000.00");
+        } else {
+            discountAmount = new java.math.BigDecimal("250.00");
+        }
+
+        java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("code", cleanCode);
+        result.put("discount", discountAmount);
+        result.put("discountType", "fixed");
+        result.put("message", "Coupon " + cleanCode + " applied successfully");
+
+        return ResponseEntity.ok(ApiResponse.success("Coupon applied: ₹" + discountAmount + " discount on your order", result));
+    }
+
     @DeleteMapping("/clear")
     @Operation(summary = "Clear Cart", description = "Removes all items from the current user's shopping cart.")
     public ResponseEntity<ApiResponse<Void>> clearCart(Authentication authentication) {

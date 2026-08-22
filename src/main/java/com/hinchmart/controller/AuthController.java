@@ -50,15 +50,9 @@ public class AuthController {
 
     @PostMapping("/register")
     @Operation(summary = "Complete Registration", description = "Creates a new user profile after phone OTP verification or direct registration.")
-    public ResponseEntity<Map<String, Object>> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
         AuthResponse response = authService.register(request);
-        Map<String, Object> resp = new LinkedHashMap<>();
-        resp.put("success", true);
-        resp.put("message", "Account created successfully");
-        resp.put("accessToken", response.getAccessToken());
-        resp.put("refreshToken", response.getRefreshToken());
-        resp.put("user", response.getUser());
-        return new ResponseEntity<>(resp, HttpStatus.CREATED);
+        return new ResponseEntity<>(ApiResponse.success("Account created successfully", response), HttpStatus.CREATED);
     }
 
     @PostMapping("/login")
@@ -70,39 +64,29 @@ public class AuthController {
 
     @PostMapping("/refresh-token")
     @Operation(summary = "Refresh Access Token", description = "Obtains a new access token using a valid refresh token.")
-    public ResponseEntity<Map<String, Object>> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+    public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
         AuthResponse response = authService.refreshToken(request);
-        Map<String, Object> resp = new LinkedHashMap<>();
-        resp.put("success", true);
-        resp.put("accessToken", response.getAccessToken());
-        resp.put("refreshToken", response.getRefreshToken());
-        return ResponseEntity.ok(resp);
+        return ResponseEntity.ok(ApiResponse.success("Token refreshed successfully", response));
     }
 
     @GetMapping("/me")
     @Operation(summary = "Fetch Active User Session (/me)", description = "Fetches profile details of the currently authenticated user.")
     @SecurityRequirement(name = "Bearer Authentication")
-    public ResponseEntity<Map<String, Object>> getCurrentUser(Authentication authentication) {
+    public ResponseEntity<ApiResponse<UserDto>> getCurrentUser(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new UnauthorizedException("Authentication token is missing or invalid");
         }
         UserDto userDto = authService.getCurrentUserDto(authentication.getName());
-        Map<String, Object> resp = new LinkedHashMap<>();
-        resp.put("success", true);
-        resp.put("user", userDto);
-        return ResponseEntity.ok(resp);
+        return ResponseEntity.ok(ApiResponse.success("User profile retrieved successfully", userDto));
     }
 
     @PostMapping("/logout")
     @Operation(summary = "User Logout", description = "Invalidates the active refresh token and ends the session.")
     @SecurityRequirement(name = "Bearer Authentication")
-    public ResponseEntity<Map<String, Object>> logout(@RequestBody(required = false) RefreshTokenRequest request) {
+    public ResponseEntity<ApiResponse<Void>> logout(@RequestBody(required = false) RefreshTokenRequest request) {
         if (request != null && request.getRefreshToken() != null) {
             authService.logout(request.getRefreshToken());
         }
-        Map<String, Object> resp = new LinkedHashMap<>();
-        resp.put("success", true);
-        resp.put("message", "Logged out successfully");
-        return ResponseEntity.ok(resp);
+        return ResponseEntity.ok(ApiResponse.success("Logged out successfully", null));
     }
 }

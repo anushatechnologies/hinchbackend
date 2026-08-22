@@ -375,4 +375,60 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public UserDto getUserProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        return authService.mapToUserDto(user);
+    }
+
+    @Transactional
+    public UserDto updateUserProfile(Long userId, com.hinchmart.dto.request.UserProfileUpdateRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        if (request.getFullName() != null && !request.getFullName().isBlank()) {
+            user.setFullName(request.getFullName().trim());
+        } else if (request.getFirstName() != null) {
+            String last = request.getLastName() != null ? request.getLastName().trim() : "";
+            user.setFullName((request.getFirstName().trim() + " " + last).trim());
+        }
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            user.setEmail(request.getEmail().trim());
+        }
+        if (request.getPhone() != null && !request.getPhone().isBlank()) {
+            user.setPhone(request.getPhone().trim());
+        }
+
+        User saved = userRepository.save(user);
+        activityLogService.log(userId, saved.getEmail(), "USER_PROFILE_UPDATED", "USER", saved.getId(),
+                "Updated personal profile details", null);
+        return authService.mapToUserDto(saved);
+    }
+
+    @Transactional
+    public UserDto updateBusinessProfile(Long userId, com.hinchmart.dto.request.BusinessProfileUpdateRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        if (user.getBuyerProfile() != null) {
+            BuyerProfile bp = user.getBuyerProfile();
+            if (request.getCompanyName() != null) bp.setCompanyName(request.getCompanyName());
+            if (request.getGstNumber() != null) bp.setGstin(request.getGstNumber());
+            if (request.getIndustry() != null) bp.setBusinessType(request.getIndustry());
+            buyerProfileRepository.save(bp);
+        } else {
+            BuyerProfile bp = new BuyerProfile(user,
+                    request.getCompanyName() != null ? request.getCompanyName() : user.getFullName() + " Enterprise",
+                    request.getGstNumber() != null ? request.getGstNumber() : "",
+                    request.getIndustry() != null ? request.getIndustry() : "Commercial Construction");
+            buyerProfileRepository.save(bp);
+            user.setBuyerProfile(bp);
+        }
+
+        User saved = userRepository.save(user);
+        activityLogService.log(userId, saved.getEmail(), "BUSINESS_PROFILE_UPDATED", "BUYER_PROFILE", saved.getId(),
+                "Updated enterprise business/GST profile", null);
+        return authService.mapToUserDto(saved);
+    }
 }

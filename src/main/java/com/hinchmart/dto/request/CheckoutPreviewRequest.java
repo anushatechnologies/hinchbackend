@@ -4,11 +4,38 @@ import java.util.List;
 
 public class CheckoutPreviewRequest {
 
+    private String shippingAddressId;
+    private String deliveryMethodId;
+    private String couponCode;
     private String shippingAddress;
     private String pincode;
     private List<AddToCartRequest> items; // Optional direct items
 
     public CheckoutPreviewRequest() {
+    }
+
+    public String getShippingAddressId() {
+        return shippingAddressId;
+    }
+
+    public void setShippingAddressId(String shippingAddressId) {
+        this.shippingAddressId = shippingAddressId;
+    }
+
+    public String getDeliveryMethodId() {
+        return deliveryMethodId;
+    }
+
+    public void setDeliveryMethodId(String deliveryMethodId) {
+        this.deliveryMethodId = deliveryMethodId;
+    }
+
+    public String getCouponCode() {
+        return couponCode;
+    }
+
+    public void setCouponCode(String couponCode) {
+        this.couponCode = couponCode;
     }
 
     public String getShippingAddress() {
@@ -35,3 +62,4 @@ public class CheckoutPreviewRequest {
         this.items = items;
     }
 }
+

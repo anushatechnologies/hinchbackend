@@ -30,7 +30,7 @@ public class BuyerRfqQuoteController {
         this.authService = authService;
     }
 
-    @GetMapping("/rfqs/{id}/quotes")
+    @GetMapping({"/rfqs/{id}/quotes", "/rfq/{id}/quotes"})
     @Operation(summary = "List Seller Quotes for Buyer RFQ",
             description = "Returns all quotations submitted by various sellers (e.g. Seller A ₹58,500, Seller B ₹59,200, Seller C ₹58,000) for comparison.")
     public ResponseEntity<ApiResponse<List<RfqQuoteDto>>> getQuotesForRfq(
@@ -41,7 +41,7 @@ public class BuyerRfqQuoteController {
         return ResponseEntity.ok(ApiResponse.success(quotes));
     }
 
-    @PostMapping("/quotes/{id}/accept")
+    @PostMapping({"/quotes/{id}/accept", "/rfq/quotes/{id}/accept", "/rfqs/quotes/{id}/accept"})
     @Operation(summary = "Accept Seller RFQ Quotation",
             description = "Accepts a chosen seller quotation, rejects competing quotes on that RFQ, and closes the RFQ.")
     public ResponseEntity<ApiResponse<RfqQuoteDto>> acceptQuote(
@@ -52,7 +52,7 @@ public class BuyerRfqQuoteController {
         return ResponseEntity.ok(ApiResponse.success("Quotation accepted successfully", accepted));
     }
 
-    @PostMapping("/quotes/{id}/reject")
+    @PostMapping({"/quotes/{id}/reject", "/rfq/quotes/{id}/reject", "/rfqs/quotes/{id}/reject"})
     @Operation(summary = "Reject Seller RFQ Quotation", description = "Rejects a specific seller quotation.")
     public ResponseEntity<ApiResponse<RfqQuoteDto>> rejectQuote(
             Authentication authentication,

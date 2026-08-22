@@ -22,8 +22,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/rfqs")
-@Tag(name = "RFQ (Request for Quotation)", description = "Endpoints for Buyer RFQ submissions, quotes, and tracking")
+@RequestMapping({"/api/rfq", "/api/rfqs"})
+@Tag(name = "RFQ & Bulk Tender Desk (Flow 7)", description = "Endpoints for Buyer RFQ submissions, quotes comparison, and tender tracking")
 @SecurityRequirement(name = "Bearer Authentication")
 public class RfqController {
 
@@ -44,6 +44,15 @@ public class RfqController {
         User user = authService.getCurrentUser(authentication.getName());
         RfqDto created = rfqService.createRfq(user.getId(), request);
         return new ResponseEntity<>(ApiResponse.success("RFQ created successfully", created), HttpStatus.CREATED);
+    }
+
+    @GetMapping
+    @PreAuthorize("hasAnyRole('BUYER', 'ADMIN', 'SUPER_ADMIN')")
+    @Operation(summary = "List Buyer's RFQs", description = "Retrieves all RFQs submitted by the currently logged-in buyer.")
+    public ResponseEntity<ApiResponse<List<RfqDto>>> getRfqs(Authentication authentication) {
+        User user = authService.getCurrentUser(authentication.getName());
+        List<RfqDto> rfqs = rfqService.getMyRfqs(user.getId());
+        return ResponseEntity.ok(ApiResponse.success(rfqs));
     }
 
     @GetMapping("/my")

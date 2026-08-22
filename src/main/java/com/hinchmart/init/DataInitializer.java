@@ -30,6 +30,8 @@ public class DataInitializer implements CommandLineRunner {
     private final SellerStoreRepository sellerStoreRepository;
     private final RfqQuoteRepository rfqQuoteRepository;
     private final DeliveryPartnerRepository deliveryPartnerRepository;
+    private final RentalEquipmentRepository rentalEquipmentRepository;
+    private final UserAddressRepository userAddressRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Value("${hinchmart.seed.enabled:true}")
@@ -46,6 +48,8 @@ public class DataInitializer implements CommandLineRunner {
                            SellerStoreRepository sellerStoreRepository,
                            RfqQuoteRepository rfqQuoteRepository,
                            DeliveryPartnerRepository deliveryPartnerRepository,
+                           RentalEquipmentRepository rentalEquipmentRepository,
+                           UserAddressRepository userAddressRepository,
                            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.buyerProfileRepository = buyerProfileRepository;
@@ -58,6 +62,8 @@ public class DataInitializer implements CommandLineRunner {
         this.sellerStoreRepository = sellerStoreRepository;
         this.rfqQuoteRepository = rfqQuoteRepository;
         this.deliveryPartnerRepository = deliveryPartnerRepository;
+        this.rentalEquipmentRepository = rentalEquipmentRepository;
+        this.userAddressRepository = userAddressRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -369,6 +375,69 @@ public class DataInitializer implements CommandLineRunner {
         deliveryPartnerRepository.save(new DeliveryPartner("VRL Logistics Heavy Freight", "VRL_LOGISTICS", "+91-836-2237511", "https://www.vrlgroup.in/track_consignment.aspx?lr_no={trackingNumber}"));
         deliveryPartnerRepository.save(new DeliveryPartner("Rivigo Express Surface", "RIVIGO_SURFACE", "+91-124-4354500", "https://www.rivigo.com/tracking?awb={trackingNumber}"));
         deliveryPartnerRepository.save(new DeliveryPartner("Blue Dart Apex Cargo", "BLUEDART_CARGO", "1860-233-1234", "https://www.bluedart.com/tracking/{trackingNumber}"));
+
+        // 9. Initialize Buyer Jobsite Delivery Address
+        UserAddress buyerSiteAddress = new UserAddress(
+                savedBuyer,
+                "Main Jobsite - Tower Alpha",
+                "Rajesh Kumar (Site Incharge)",
+                "+919876543210",
+                "Plot 402, Financial District, Nanakramguda",
+                "Hyderabad",
+                "Telangana",
+                "500032"
+        );
+        buyerSiteAddress.setAlternatePhone("+919876543211");
+        buyerSiteAddress.setCompanyName("Apex Construction Materials Pvt Ltd");
+        buyerSiteAddress.setGstin("36AAAAA0000A1Z5");
+        buyerSiteAddress.setAddressLine2("Behind Wave Rock SEZ");
+        buyerSiteAddress.setDefault(true);
+        buyerSiteAddress.setAddressType("site");
+        buyerSiteAddress.setSiteAccess("heavy_trailer");
+        buyerSiteAddress.setCraneAvailable(true);
+        buyerSiteAddress.setGatePassRequired(true);
+        buyerSiteAddress.setEntryTimings("06:00 AM - 10:00 PM");
+        userAddressRepository.save(buyerSiteAddress);
+
+        // 10. Initialize Heavy Machinery & Equipment Rentals
+        rentalEquipmentRepository.save(new RentalEquipment(
+                "rent_jcb_3dx",
+                "JCB 3DX Super Backhoe Loader (4x4)",
+                "Earthmoving Equipment",
+                new BigDecimal("9500.00"),
+                new BigDecimal("220000.00"),
+                "https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3",
+                8,
+                "76 HP",
+                "1.1 cu.m",
+                "4.77 m"
+        ));
+
+        rentalEquipmentRepository.save(new RentalEquipment(
+                "rent_crane_25t",
+                "ACE 25-Ton Mobile Hydraulic Crane",
+                "Lifting & Cranes",
+                new BigDecimal("14500.00"),
+                new BigDecimal("340000.00"),
+                "https://images.unsplash.com/photo-1504307651254-35680f356dfd",
+                4,
+                "150 HP",
+                "25 Ton Max Load",
+                "31 m Boom Height"
+        ));
+
+        rentalEquipmentRepository.save(new RentalEquipment(
+                "rent_transit_mixer",
+                "Schwing Stetter 6 Cu.M Transit Mixer",
+                "Concrete Machinery",
+                new BigDecimal("11000.00"),
+                new BigDecimal("260000.00"),
+                "https://images.unsplash.com/photo-1589939705384-5185137a7f0f",
+                6,
+                "180 HP",
+                "6.0 cu.m Drum",
+                "N/A"
+        ));
 
         logger.info(">>> HinchMart Seed Data initialized successfully!");
         logger.info(">>> Demo Credentials: ");

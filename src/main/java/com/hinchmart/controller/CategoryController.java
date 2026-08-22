@@ -24,9 +24,11 @@ import java.util.Map;
 public class CategoryController {
 
     private final CategoryService categoryService;
+    private final com.hinchmart.service.ProductService productService;
 
-    public CategoryController(CategoryService categoryService) {
+    public CategoryController(CategoryService categoryService, com.hinchmart.service.ProductService productService) {
         this.categoryService = categoryService;
+        this.productService = productService;
     }
 
     // ==========================================
@@ -45,6 +47,17 @@ public class CategoryController {
     public ResponseEntity<ApiResponse<CategoryDto>> getCategoryById(@PathVariable Long id) {
         CategoryDto category = categoryService.getCategoryById(id);
         return ResponseEntity.ok(ApiResponse.success(category));
+    }
+
+    @GetMapping("/categories/{id}/products")
+    @Operation(summary = "List Products in Category", description = "Returns active products belonging to the specified category.")
+    public ResponseEntity<ApiResponse<org.springframework.data.domain.Page<com.hinchmart.dto.response.ProductDto>>> getCategoryProducts(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int limit) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, limit);
+        org.springframework.data.domain.Page<com.hinchmart.dto.response.ProductDto> products = productService.getProducts(null, id, null, null, null, null, null, true, pageable);
+        return ResponseEntity.ok(ApiResponse.success(products));
     }
 
     @GetMapping("/subcategories")

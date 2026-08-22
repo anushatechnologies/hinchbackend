@@ -34,7 +34,7 @@ public class NotificationController {
         this.authService = authService;
     }
 
-    @GetMapping("/notifications")
+    @GetMapping({"/notifications", "/user/notifications"})
     @PreAuthorize("hasAnyRole('BUYER', 'SELLER', 'ADMIN', 'SUPER_ADMIN')")
     @Operation(summary = "Get User Notifications", description = "Returns a paginated list of notifications for the authenticated user.")
     public ResponseEntity<ApiResponse<Page<NotificationDto>>> getNotifications(

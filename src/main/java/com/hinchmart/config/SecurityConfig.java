@@ -64,6 +64,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/subcategories/**", "/api/v1/subcategories/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/brands/**", "/api/v1/brands/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/v1/products/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/search/**", "/api/v1/search/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/vendors/**", "/api/v1/vendors/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/rentals/**", "/api/v1/rentals/**").permitAll()
                 // Public Payment Gateway Config & Webhook Callbacks
                 .requestMatchers(HttpMethod.GET, "/api/payments/config", "/api/v1/payments/config").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/payments/webhook", "/api/v1/payments/webhook").permitAll()
