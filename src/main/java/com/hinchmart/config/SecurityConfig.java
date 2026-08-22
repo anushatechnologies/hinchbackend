@@ -69,6 +69,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/payments/webhook", "/api/v1/payments/webhook").permitAll()
                 // Swagger / OpenAPI UI Documentation
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                // Spring Boot Actuator Endpoints (Health, Info, Metrics)
+                .requestMatchers("/actuator/**").permitAll()
                 // SUPER ADMIN ENDPOINTS
                 .requestMatchers("/api/super-admin/**", "/api/v1/super-admin/**").hasRole("SUPER_ADMIN")
                 // Admin Endpoints
