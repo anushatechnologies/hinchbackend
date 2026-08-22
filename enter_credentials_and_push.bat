@@ -6,9 +6,10 @@ echo ======================================================================
 echo                HINCHMART BACKEND - GITHUB PUSH WIZARD
 echo ======================================================================
 echo Repository: https://github.com/anushatechnologies/hinchbackend.git
+echo Branch:     pavansai/feature-branch
 echo.
 echo NOTE: GitHub requires a Personal Access Token (PAT) instead of your
-echo       regular password. If you need to generate one (30 seconds):
+echo       regular password. If you need to generate one:
 echo       1. Open: https://github.com/settings/tokens/new
 echo       2. Name it "HinchMart" and check the "repo" checkbox.
 echo       3. Click "Generate token" and copy it.
@@ -23,7 +24,7 @@ if "%GITHUB_USER%"=="" (
     exit /b 1
 )
 
-set /p GITHUB_TOKEN="Enter your GitHub Personal Access Token (or password): "
+set /p GITHUB_TOKEN="Enter your GitHub Personal Access Token: "
 if "%GITHUB_TOKEN%"=="" (
     echo [ERROR] Token cannot be empty.
     pause
@@ -32,25 +33,26 @@ if "%GITHUB_TOKEN%"=="" (
 
 echo.
 echo ----------------------------------------------------------------------
-echo Pushing code to https://github.com/anushatechnologies/hinchbackend.git ...
+echo Pushing code to https://github.com/anushatechnologies/hinchbackend.git (branch: pavansai/feature-branch) ...
 echo ----------------------------------------------------------------------
 echo.
 
-"%LOCALAPPDATA%\MinGit\cmd\git.exe" push https://%GITHUB_USER%:%GITHUB_TOKEN%@github.com/anushatechnologies/hinchbackend.git main
+git push https://%GITHUB_USER%:%GITHUB_TOKEN%@github.com/anushatechnologies/hinchbackend.git pavansai/feature-branch
 
 echo.
 if %errorlevel% equ 0 (
     echo ==================================================================
     echo [SUCCESS] All code has been successfully pushed to GitHub!
-    echo Check it at: https://github.com/anushatechnologies/hinchbackend
+    echo Check it at: https://github.com/anushatechnologies/hinchbackend/tree/pavansai/feature-branch
     echo ==================================================================
 ) else (
     echo ==================================================================
     echo [FAILED] Push failed. Please verify that:
-    echo  1. Your username is correct.
-    echo  2. Your Personal Access Token has the "repo" permission.
+    echo  1. Your username has write access to anushatechnologies/hinchbackend
+    echo  2. Your Personal Access Token has the "repo" permission scope.
     echo ==================================================================
 )
 
 echo.
 pause
+
