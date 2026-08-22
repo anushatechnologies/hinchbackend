@@ -41,9 +41,10 @@ Thumbs.db
 ### Logs ###
 *.log
 
-### Environment ###
+### Environment & Keys ###
 .env
+*.pem
 
 ### Temp Files ###
 err.txt
-out.txt
+out.txt
