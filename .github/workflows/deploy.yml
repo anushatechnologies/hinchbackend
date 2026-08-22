@@ -184,11 +184,7 @@ jobs:
             HEALTH_CHECK_TIMEOUT_SECONDS=600
             HEALTH_CHECK_INTERVAL_SECONDS=5
 
-            HEALTH_CHECK_ATTEMPTS=$(
-              (
-                HEALTH_CHECK_TIMEOUT_SECONDS / HEALTH_CHECK_INTERVAL_SECONDS
-              )
-            )
+            HEALTH_CHECK_ATTEMPTS=$((HEALTH_CHECK_TIMEOUT_SECONDS / HEALTH_CHECK_INTERVAL_SECONDS))
 
             echo "Waiting up to ${HEALTH_CHECK_TIMEOUT_SECONDS} seconds for ${HEALTH_CHECK_URL}..."
 
