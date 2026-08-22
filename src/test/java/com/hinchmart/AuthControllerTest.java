@@ -117,8 +117,8 @@ public class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(verifyOtpRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
-                .andExpect(jsonPath("$.data.user.email").value("buyer@demo.com"));
+                .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.user.email").value("buyer@demo.com"));
     }
 
     @Test

@@ -11,6 +11,9 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+  mail:
+    host: localhost
+    port: 587
 
 hinchmart:
   jwt:
@@ -19,7 +22,12 @@ hinchmart:
     refresh-expiration-ms: 86400000
   otp:
     expiration-minutes: 5
+    mock-mode: true
     default-test-code: 123456
+  mail:
+    enabled: false
+  sms:
+    enabled: false
   seed:
     enabled: true
 
@@ -29,4 +37,3 @@ razorpay:
   webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:}
   currency: INR
   company-name: HinchMart
-

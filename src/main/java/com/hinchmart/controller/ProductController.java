@@ -81,9 +81,9 @@ public class ProductController {
     }
 
     @PostMapping("/products")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('SELLER', 'ADMIN', 'SUPER_ADMIN')")
     @SecurityRequirement(name = "Bearer Authentication")
-    @Operation(summary = "Create SKU / Product Catalog Entry (Admin Only)", description = "Adds a new SKU product item with MOQ, GST, and pricing tiers.")
+    @Operation(summary = "Create SKU / Product Catalog Entry", description = "Adds a new SKU product item with MOQ, GST, and pricing tiers.")
     public ResponseEntity<ApiResponse<ProductDto>> createProduct(Authentication authentication,
                                                                  @Valid @RequestBody ProductCreateRequest request) {
         User user = authService.getCurrentUser(authentication.getName());
