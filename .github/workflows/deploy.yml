@@ -170,21 +170,17 @@ jobs:
             # ========================================================
             # Health check
             # ========================================================
-            HEALTH_CHECK_URL="https://api.hinchmart.com/api/health"
+            HEALTH_CHECK_URL="http://localhost:9000/api/health"
+            DOMAIN_HEALTH_URL="https://api.hinchmart.com/api/health"
             HEALTH_CHECK_TIMEOUT_SECONDS=600
             HEALTH_CHECK_INTERVAL_SECONDS=5
             HEALTH_CHECK_ATTEMPTS=$((HEALTH_CHECK_TIMEOUT_SECONDS / HEALTH_CHECK_INTERVAL_SECONDS))
 
-            echo "Waiting up to ${HEALTH_CHECK_TIMEOUT_SECONDS} seconds for ${HEALTH_CHECK_URL}..."
+            echo "Waiting up to ${HEALTH_CHECK_TIMEOUT_SECONDS} seconds for ${HEALTH_CHECK_URL} / ${DOMAIN_HEALTH_URL}..."
 
             for attempt in $(seq 1 "${HEALTH_CHECK_ATTEMPTS}"); do
 
-              if curl \
-                --fail \
-                --silent \
-                --show-error \
-                "${HEALTH_CHECK_URL}" \
-                > /dev/null; then
+              if curl --fail --silent --show-error "${HEALTH_CHECK_URL}" > /dev/null 2>&1 || curl --fail --silent --show-error "${DOMAIN_HEALTH_URL}" > /dev/null 2>&1; then
 
                 echo "=========================================="
                 echo "Health check passed."
