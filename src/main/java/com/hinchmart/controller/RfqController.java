@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/rfqs")
+@RequestMapping({"/api/rfqs", "/api/rfq"})
 @Tag(name = "RFQ (Request for Quotation)", description = "Endpoints for Buyer RFQ submissions, quotes, and tracking")
 @SecurityRequirement(name = "Bearer Authentication")
 public class RfqController {

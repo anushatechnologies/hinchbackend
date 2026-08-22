@@ -17,7 +17,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping({"/api/users", "/api/user"})
 @Tag(name = "User & Profile Management", description = "Endpoints for Buyer and Seller Profile Management")
 @SecurityRequirement(name = "Bearer Authentication")
 public class UserController {
@@ -30,7 +30,7 @@ public class UserController {
         this.authService = authService;
     }
 
-    @GetMapping("/profile/buyer")
+    @GetMapping({"/profile/buyer", "/profile"})
     @Operation(summary = "Get Current Buyer Profile", description = "Returns buyer profile for the authenticated user.")
     public ResponseEntity<ApiResponse<BuyerProfileDto>> getBuyerProfile(Authentication authentication) {
         User user = authService.getCurrentUser(authentication.getName());
@@ -38,7 +38,7 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success(profile));
     }
 
-    @PutMapping("/profile/buyer")
+    @PutMapping({"/profile/buyer", "/profile", "/business-profile"})
     @Operation(summary = "Update Buyer Profile", description = "Updates buyer business details, GSTIN, and addresses.")
     public ResponseEntity<ApiResponse<BuyerProfileDto>> updateBuyerProfile(Authentication authentication,
                                                                           @RequestBody BuyerProfileUpdateRequest request) {

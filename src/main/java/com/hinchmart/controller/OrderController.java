@@ -52,10 +52,11 @@ public class OrderController {
     public ResponseEntity<ApiResponse<Page<OrderDto>>> getMyOrders(
             Authentication authentication,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String status) {
         User user = authService.getCurrentUser(authentication.getName());
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<OrderDto> orders = orderService.getMyOrders(user.getId(), pageable);
+        Page<OrderDto> orders = orderService.getMyOrders(user.getId(), status, pageable);
         return ResponseEntity.ok(ApiResponse.success(orders));
     }
 

@@ -188,6 +188,25 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
+    public Page<OrderDto> getMyOrders(Long buyerUserId, String status, Pageable pageable) {
+        Page<Order> orders;
+        if (status == null || status.isBlank() || "all".equalsIgnoreCase(status)) {
+            orders = orderRepository.findByBuyerIdOrderByCreatedAtDesc(buyerUserId, pageable);
+        } else {
+            try {
+                OrderStatus orderStatus = OrderStatus.valueOf(status.trim().toUpperCase());
+                orders = orderRepository.findByBuyerIdAndOrderStatusOrderByCreatedAtDesc(buyerUserId, orderStatus, pageable);
+            } catch (IllegalArgumentException exception) {
+                throw new BadRequestException("Invalid order status: " + status);
+            }
+        }
+        List<OrderDto> dtos = orders.getContent().stream()
+                .map(this::mapToOrderDto)
+                .collect(Collectors.toList());
+        return new PageImpl<>(dtos, pageable, orders.getTotalElements());
+    }
+
+    @Transactional(readOnly = true)
     public Page<OrderDto> getSellerOrders(Long sellerUserId, Pageable pageable) {
         Page<Order> orders = orderRepository.findOrdersBySellerId(sellerUserId, pageable);
         List<OrderDto> dtos = orders.getContent().stream()

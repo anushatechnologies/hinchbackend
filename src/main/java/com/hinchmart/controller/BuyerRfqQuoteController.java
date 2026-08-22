@@ -30,7 +30,7 @@ public class BuyerRfqQuoteController {
         this.authService = authService;
     }
 
-    @GetMapping("/rfqs/{id}/quotes")
+    @GetMapping({"/rfqs/{id}/quotes", "/rfq/{id}/quotes"})
     @Operation(summary = "List Seller Quotes for Buyer RFQ",
             description = "Returns all quotations submitted by various sellers (e.g. Seller A ₹58,500, Seller B ₹59,200, Seller C ₹58,000) for comparison.")
     public ResponseEntity<ApiResponse<List<RfqQuoteDto>>> getQuotesForRfq(

@@ -17,6 +17,7 @@ import java.util.Optional;
 public interface OrderRepository extends JpaRepository<Order, Long> {
     Optional<Order> findByOrderNumber(String orderNumber);
     Page<Order> findByBuyerIdOrderByCreatedAtDesc(Long buyerId, Pageable pageable);
+    Page<Order> findByBuyerIdAndOrderStatusOrderByCreatedAtDesc(Long buyerId, OrderStatus orderStatus, Pageable pageable);
     List<Order> findByBuyerIdOrderByCreatedAtDesc(Long buyerId);
 
     @Query("SELECT DISTINCT o FROM Order o JOIN o.items item WHERE item.seller.id = :sellerId ORDER BY o.createdAt DESC")
