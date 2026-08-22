@@ -170,8 +170,7 @@ jobs:
             # ========================================================
             # Health check
             # ========================================================
-            HEALTH_CHECK_URL="http://localhost:9000/actuator/health"
-            DOMAIN_HEALTH_URL="https://api.hinchmart.com/actuator/health"
+            HEALTH_CHECK_URL="https://api.hinchmart.com/actuator/health"
             HEALTH_CHECK_TIMEOUT_SECONDS=600
             HEALTH_CHECK_INTERVAL_SECONDS=5
             HEALTH_CHECK_ATTEMPTS=$((HEALTH_CHECK_TIMEOUT_SECONDS / HEALTH_CHECK_INTERVAL_SECONDS))
