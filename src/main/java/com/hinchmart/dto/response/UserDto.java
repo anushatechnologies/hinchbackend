@@ -30,6 +30,7 @@ public class UserDto {
     private BusinessProfileDto businessProfile;
 
     private Role role;
+    private java.util.Set<Role> roles = new java.util.HashSet<>();
     private AccountStatus status;
     private BuyerProfileDto buyerProfile;
     private SellerProfileDto sellerProfile;
@@ -132,6 +133,17 @@ public class UserDto {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public java.util.Set<Role> getRoles() {
+        if (roles == null) {
+            roles = new java.util.HashSet<>();
+        }
+        return roles;
+    }
+
+    public void setRoles(java.util.Set<Role> roles) {
+        this.roles = roles != null ? roles : new java.util.HashSet<>();
     }
 
     public AccountStatus getStatus() {

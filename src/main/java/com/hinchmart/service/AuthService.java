@@ -96,7 +96,11 @@ public class AuthService {
             throw new BadRequestException("Phone number is already registered: " + phone);
         }
 
-        Role role = request.getRole() != null ? request.getRole() : Role.BUYER;
+        java.util.Set<Role> roles = request.getRoles();
+        if (roles == null || roles.isEmpty()) {
+            roles = new java.util.HashSet<>();
+            roles.add(request.getRole() != null ? request.getRole() : Role.BUYER);
+        }
         String rawPassword = request.getPassword();
         if (rawPassword == null || rawPassword.trim().isEmpty()) {
             rawPassword = "User@" + UUID.randomUUID().toString().substring(0, 8);
@@ -109,14 +113,17 @@ public class AuthService {
                 phone,
                 passwordEncoder.encode(rawPassword),
                 fullName,
-                role,
+                roles,
                 AccountStatus.ACTIVE
         );
 
         User savedUser = userRepository.save(user);
 
         // Attach Profile based on Role / AccountType
-        if (role == Role.SELLER) {
+        boolean isSeller = savedUser.hasAnyRole(Role.SELLER, Role.SELLER_ADMIN, Role.SELLER_STAFF);
+        boolean isBuyer = savedUser.hasRole(Role.BUYER) || !isSeller;
+
+        if (isSeller) {
             SellerProfile sellerProfile = new SellerProfile(
                     savedUser,
                     request.getCompanyName() != null ? request.getCompanyName() : fullName + " Trading Co.",
@@ -131,7 +138,8 @@ public class AuthService {
             sellerProfile.setPincode(request.getPincode());
             savedUser.setSellerProfile(sellerProfile);
             sellerProfileRepository.save(sellerProfile);
-        } else {
+        }
+        if (isBuyer) {
             BuyerProfile buyerProfile = new BuyerProfile(
                     savedUser,
                     request.getCompanyName() != null ? request.getCompanyName() : fullName + " Enterprise",
@@ -152,7 +160,7 @@ public class AuthService {
         RefreshToken refreshToken = createRefreshToken(savedUser);
 
         activityLogService.log(savedUser.getId(), savedUser.getEmail(), "USER_REGISTERED", "USER", savedUser.getId(),
-                "Registered with role " + role.name(), null);
+                "Registered with roles: " + savedUser.getRoles(), null);
 
         return new AuthResponse(
                 accessToken,
@@ -318,6 +326,7 @@ public class AuthService {
         }
 
         dto.setRole(user.getRole());
+        dto.setRoles(user.getRoles());
         dto.setStatus(user.getStatus());
         dto.setCreatedAt(user.getCreatedAt());
 
@@ -327,7 +336,7 @@ public class AuthService {
         dto.setEmailVerified(user.getEmail() != null && !user.getEmail().trim().isEmpty());
 
         // Compute Account Type & Business Profile
-        if (user.getRole() == Role.SELLER) {
+        if (user.hasAnyRole(Role.SELLER, Role.SELLER_ADMIN, Role.SELLER_STAFF)) {
             dto.setAccountType("vendor");
             if (user.getSellerProfile() != null) {
                 SellerProfile sp = user.getSellerProfile();

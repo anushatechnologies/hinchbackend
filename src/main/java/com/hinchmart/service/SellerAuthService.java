@@ -70,12 +70,14 @@ public class SellerAuthService {
             throw new BadRequestException("An account with this mobile number already exists");
         }
 
+        java.util.Set<Role> roles = new java.util.HashSet<>();
+        roles.add(Role.SELLER_ADMIN);
         User user = new User(
                 request.getEmail(),
                 phone,
                 passwordEncoder.encode(request.getPassword()),
                 request.getFullName(),
-                Role.SELLER_ADMIN,
+                roles,
                 AccountStatus.ACTIVE
         );
         User savedUser = userRepository.save(user);
@@ -145,7 +147,8 @@ public class SellerAuthService {
         userMap.put("name", user.getFullName());
         userMap.put("email", user.getEmail());
         userMap.put("phone", user.getPhone());
-        userMap.put("role", user.getRole().name());
+        userMap.put("role", user.getRole() != null ? user.getRole().name() : null);
+        userMap.put("roles", user.getRoles().stream().map(Enum::name).collect(java.util.stream.Collectors.toList()));
 
         Map<String, Object> sellerMap = new LinkedHashMap<>();
         if (sp != null) {
@@ -211,7 +214,8 @@ public class SellerAuthService {
         userMap.put("id", "usr_" + user.getId());
         userMap.put("name", user.getFullName());
         userMap.put("email", user.getEmail());
-        userMap.put("role", user.getRole().name());
+        userMap.put("role", user.getRole() != null ? user.getRole().name() : null);
+        userMap.put("roles", user.getRoles().stream().map(Enum::name).collect(java.util.stream.Collectors.toList()));
 
         Map<String, Object> sellerMap = new LinkedHashMap<>();
         if (sp != null) {

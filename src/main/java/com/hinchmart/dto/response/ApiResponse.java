@@ -1,5 +1,6 @@
 package com.hinchmart.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.time.LocalDateTime;
@@ -10,6 +11,8 @@ public class ApiResponse<T> {
     private String message;
     private T data;
     private ErrorDetails error;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
     private LocalDateTime timestamp;
 
     public ApiResponse() {

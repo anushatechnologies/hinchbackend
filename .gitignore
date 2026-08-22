@@ -43,3 +43,7 @@ Thumbs.db
 
 ### Environment ###
 .env
+
+### Temp Files ###
+err.txt
+out.txt

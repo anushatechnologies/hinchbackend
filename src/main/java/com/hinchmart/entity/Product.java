@@ -105,6 +105,10 @@ public class Product {
     @JsonIgnoreProperties("product")
     private Inventory inventory;
 
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties("product")
+    private List<PincodeInventory> pincodeInventories = new ArrayList<>();
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -321,6 +325,24 @@ public class Product {
         if (inventory != null) {
             inventory.setProduct(this);
         }
+    }
+
+    public List<PincodeInventory> getPincodeInventories() {
+        return pincodeInventories;
+    }
+
+    public void setPincodeInventories(List<PincodeInventory> pincodeInventories) {
+        this.pincodeInventories = pincodeInventories;
+    }
+
+    public void addPincodeInventory(PincodeInventory pincodeInventory) {
+        this.pincodeInventories.add(pincodeInventory);
+        pincodeInventory.setProduct(this);
+    }
+
+    public void removePincodeInventory(PincodeInventory pincodeInventory) {
+        this.pincodeInventories.remove(pincodeInventory);
+        pincodeInventory.setProduct(null);
     }
 
     public LocalDateTime getCreatedAt() {

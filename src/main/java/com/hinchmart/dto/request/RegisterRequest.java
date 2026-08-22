@@ -14,6 +14,7 @@ public class RegisterRequest {
     private String password;
     private String accountType; // "individual", "business", "contractor", "vendor"
     private Role role;
+    private java.util.Set<Role> roles;
 
     // Profile fields
     private String companyName;
@@ -97,7 +98,7 @@ public class RegisterRequest {
 
     public void setAccountType(String accountType) {
         this.accountType = accountType;
-        if (this.role == null) {
+        if (this.role == null && (this.roles == null || this.roles.isEmpty())) {
             if ("vendor".equalsIgnoreCase(accountType) || "seller".equalsIgnoreCase(accountType)) {
                 this.role = Role.SELLER;
             } else {
@@ -110,6 +111,9 @@ public class RegisterRequest {
         if (role != null) {
             return role;
         }
+        if (roles != null && !roles.isEmpty()) {
+            return roles.iterator().next();
+        }
         if (accountType != null && ("vendor".equalsIgnoreCase(accountType) || "seller".equalsIgnoreCase(accountType))) {
             return Role.SELLER;
         }
@@ -118,6 +122,25 @@ public class RegisterRequest {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public java.util.Set<Role> getRoles() {
+        if (roles != null && !roles.isEmpty()) {
+            return roles;
+        }
+        java.util.Set<Role> defaultRoles = new java.util.HashSet<>();
+        if (role != null) {
+            defaultRoles.add(role);
+        } else if (accountType != null && ("vendor".equalsIgnoreCase(accountType) || "seller".equalsIgnoreCase(accountType))) {
+            defaultRoles.add(Role.SELLER);
+        } else {
+            defaultRoles.add(Role.BUYER);
+        }
+        return defaultRoles;
+    }
+
+    public void setRoles(java.util.Set<Role> roles) {
+        this.roles = roles;
     }
 
     public String getCompanyName() {

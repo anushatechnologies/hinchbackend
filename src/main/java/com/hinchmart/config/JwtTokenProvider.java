@@ -14,7 +14,9 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtTokenProvider {
@@ -36,7 +38,15 @@ public class JwtTokenProvider {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", user.getId());
         claims.put("email", user.getEmail());
-        claims.put("role", user.getRole().name());
+        
+        List<String> roleNames = user.getRoles().stream()
+                .map(Enum::name)
+                .collect(Collectors.toList());
+        claims.put("roles", roleNames);
+        if (user.getRole() != null) {
+            claims.put("role", user.getRole().name());
+        }
+        
         claims.put("status", user.getStatus().name());
         if (user.getPhone() != null) {
             claims.put("phone", user.getPhone());

@@ -51,6 +51,8 @@ public class ProductCreateRequest {
 
     private List<BulkPriceTierDto> bulkPrices = new ArrayList<>();
 
+    private List<PincodeInventoryRequest> pincodeInventories = new ArrayList<>();
+
     public ProductCreateRequest() {
     }
 
@@ -188,5 +190,13 @@ public class ProductCreateRequest {
 
     public void setBulkPrices(List<BulkPriceTierDto> bulkPrices) {
         this.bulkPrices = bulkPrices;
+    }
+
+    public List<PincodeInventoryRequest> getPincodeInventories() {
+        return pincodeInventories;
+    }
+
+    public void setPincodeInventories(List<PincodeInventoryRequest> pincodeInventories) {
+        this.pincodeInventories = pincodeInventories;
     }
 }

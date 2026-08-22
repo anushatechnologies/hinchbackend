@@ -446,7 +446,7 @@ public class PaymentService {
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + currentUserId));
 
-        if (currentUser.getRole() == Role.BUYER && !payment.getBuyer().getId().equals(currentUserId)) {
+        if (currentUser.hasRole(Role.BUYER) && !currentUser.hasAnyRole(Role.ADMIN, Role.SUPER_ADMIN) && !payment.getBuyer().getId().equals(currentUserId)) {
             throw new UnauthorizedException("You do not have permission to view this payment");
         }
 

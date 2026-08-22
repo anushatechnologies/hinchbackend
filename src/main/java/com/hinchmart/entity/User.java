@@ -5,12 +5,13 @@ import com.hinchmart.entity.enums.AccountStatus;
 import com.hinchmart.entity.enums.Role;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "users", indexes = {
     @Index(name = "idx_user_email", columnList = "email"),
-    @Index(name = "idx_user_phone", columnList = "phone"),
-    @Index(name = "idx_user_role", columnList = "role")
+    @Index(name = "idx_user_phone", columnList = "phone")
 })
 public class User {
 
@@ -31,9 +32,18 @@ public class User {
     @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+        name = "user_roles",
+        joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
+        indexes = {
+            @Index(name = "idx_user_roles_user_id", columnList = "user_id"),
+            @Index(name = "idx_user_roles_role", columnList = "role")
+        }
+    )
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
-    private Role role;
+    @Column(name = "role", nullable = false, length = 30)
+    private Set<Role> roles = new HashSet<>();
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -59,7 +69,20 @@ public class User {
         this.phone = phone;
         this.password = password;
         this.fullName = fullName;
-        this.role = role;
+        if (role != null) {
+            this.roles.add(role);
+        }
+        this.status = status != null ? status : AccountStatus.ACTIVE;
+    }
+
+    public User(String email, String phone, String password, String fullName, Set<Role> roles, AccountStatus status) {
+        this.email = email;
+        this.phone = phone;
+        this.password = password;
+        this.fullName = fullName;
+        if (roles != null) {
+            this.roles = new HashSet<>(roles);
+        }
         this.status = status != null ? status : AccountStatus.ACTIVE;
     }
 
@@ -115,12 +138,77 @@ public class User {
         this.fullName = fullName;
     }
 
-    public Role getRole() {
-        return role;
+    public Set<Role> getRoles() {
+        if (roles == null) {
+            roles = new HashSet<>();
+        }
+        return roles;
     }
 
+    public void setRoles(Set<Role> roles) {
+        this.roles = roles != null ? new HashSet<>(roles) : new HashSet<>();
+    }
+
+    public void addRole(Role role) {
+        if (this.roles == null) {
+            this.roles = new HashSet<>();
+        }
+        if (role != null) {
+            this.roles.add(role);
+        }
+    }
+
+    public void removeRole(Role role) {
+        if (this.roles != null && role != null) {
+            this.roles.remove(role);
+        }
+    }
+
+    public boolean hasRole(Role role) {
+        return this.roles != null && role != null && this.roles.contains(role);
+    }
+
+    public boolean hasAnyRole(Role... checkRoles) {
+        if (this.roles == null || checkRoles == null) {
+            return false;
+        }
+        for (Role r : checkRoles) {
+            if (r != null && this.roles.contains(r)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Backward-compatible getter returning the primary/highest privilege role.
+     */
+    public Role getRole() {
+        if (roles == null || roles.isEmpty()) {
+            return null;
+        }
+        if (roles.contains(Role.SUPER_ADMIN)) return Role.SUPER_ADMIN;
+        if (roles.contains(Role.ADMIN)) return Role.ADMIN;
+        if (roles.contains(Role.SELLER_ADMIN)) return Role.SELLER_ADMIN;
+        if (roles.contains(Role.SELLER)) return Role.SELLER;
+        if (roles.contains(Role.SELLER_STAFF)) return Role.SELLER_STAFF;
+        if (roles.contains(Role.BUYER)) return Role.BUYER;
+        if (roles.contains(Role.SUPPORT)) return Role.SUPPORT;
+        return roles.iterator().next();
+    }
+
+    /**
+     * Backward-compatible setter for single role assignments.
+     */
     public void setRole(Role role) {
-        this.role = role;
+        if (this.roles == null) {
+            this.roles = new HashSet<>();
+        } else {
+            this.roles.clear();
+        }
+        if (role != null) {
+            this.roles.add(role);
+        }
     }
 
     public AccountStatus getStatus() {

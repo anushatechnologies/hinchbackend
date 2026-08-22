@@ -178,7 +178,7 @@ public class InvoiceService {
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + currentUserId));
 
-        if (currentUser.getRole() == Role.BUYER && !invoice.getBuyer().getId().equals(currentUserId)) {
+        if (currentUser.hasRole(Role.BUYER) && !currentUser.hasAnyRole(Role.ADMIN, Role.SUPER_ADMIN) && !invoice.getBuyer().getId().equals(currentUserId)) {
             throw new UnauthorizedException("You do not have permission to view this invoice");
         }
 

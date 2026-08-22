@@ -1,9 +1,12 @@
 package com.hinchmart.controller;
 
+import com.hinchmart.dto.request.ProductCreateRequest;
 import com.hinchmart.dto.request.SellerStatusUpdateRequest;
 import com.hinchmart.dto.response.*;
+import com.hinchmart.entity.User;
 import com.hinchmart.entity.enums.ApprovalStatus;
 import com.hinchmart.entity.enums.SellerStatus;
+import com.hinchmart.service.AuthService;
 import com.hinchmart.service.OrderService;
 import com.hinchmart.service.PaymentService;
 import com.hinchmart.service.ProductService;
@@ -16,8 +19,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -34,15 +39,18 @@ public class AdminController {
     private final ProductService productService;
     private final OrderService orderService;
     private final PaymentService paymentService;
+    private final AuthService authService;
 
     public AdminController(UserService userService,
                            ProductService productService,
                            OrderService orderService,
-                           PaymentService paymentService) {
+                           PaymentService paymentService,
+                           AuthService authService) {
         this.userService = userService;
         this.productService = productService;
         this.orderService = orderService;
         this.paymentService = paymentService;
+        this.authService = authService;
     }
 
     // ==========================================
@@ -188,6 +196,17 @@ public class AdminController {
         boolean active = body.getOrDefault("active", true);
         ProductDto updated = productService.toggleProductActive(id, active);
         return ResponseEntity.ok(ApiResponse.success("Product status updated successfully", updated));
+    }
+
+    @PostMapping("/products")
+    @Operation(summary = "Create SKU / Product Catalog Entry (Admin)",
+            description = "Creates a new SKU catalog entry with automatic inventory table and default pincode population.")
+    public ResponseEntity<ApiResponse<ProductDto>> createProduct(
+            Authentication authentication,
+            @Valid @RequestBody ProductCreateRequest request) {
+        User user = authService.getCurrentUser(authentication.getName());
+        ProductDto created = productService.createProduct(user.getId(), request);
+        return new ResponseEntity<>(ApiResponse.success("SKU item created successfully by Admin", created), HttpStatus.CREATED);
     }
 
     // ==========================================

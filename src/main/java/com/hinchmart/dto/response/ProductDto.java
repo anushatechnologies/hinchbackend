@@ -43,6 +43,7 @@ public class ProductDto {
     private String primaryImageUrl;
     private List<ProductImageDto> images = new ArrayList<>();
     private List<ProductBulkPriceDto> bulkPrices = new ArrayList<>();
+    private List<PincodeInventoryDto> pincodeInventories = new ArrayList<>();
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -283,6 +284,14 @@ public class ProductDto {
 
     public void setBulkPrices(List<ProductBulkPriceDto> bulkPrices) {
         this.bulkPrices = bulkPrices;
+    }
+
+    public List<PincodeInventoryDto> getPincodeInventories() {
+        return pincodeInventories;
+    }
+
+    public void setPincodeInventories(List<PincodeInventoryDto> pincodeInventories) {
+        this.pincodeInventories = pincodeInventories;
     }
 
     public LocalDateTime getCreatedAt() {

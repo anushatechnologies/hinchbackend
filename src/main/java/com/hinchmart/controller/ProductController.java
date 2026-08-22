@@ -81,14 +81,14 @@ public class ProductController {
     }
 
     @PostMapping("/products")
-    @PreAuthorize("hasAnyRole('SELLER', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @SecurityRequirement(name = "Bearer Authentication")
-    @Operation(summary = "Create Product (Seller / Admin)", description = "Adds a new product with unit MOQ, GST %, and multi-tier bulk pricing.")
+    @Operation(summary = "Create SKU / Product Catalog Entry (Admin Only)", description = "Adds a new SKU product item with MOQ, GST, and pricing tiers.")
     public ResponseEntity<ApiResponse<ProductDto>> createProduct(Authentication authentication,
                                                                  @Valid @RequestBody ProductCreateRequest request) {
         User user = authService.getCurrentUser(authentication.getName());
         ProductDto created = productService.createProduct(user.getId(), request);
-        return new ResponseEntity<>(ApiResponse.success("Product created successfully", created), HttpStatus.CREATED);
+        return new ResponseEntity<>(ApiResponse.success("SKU / Product created successfully", created), HttpStatus.CREATED);
     }
 
     @PutMapping("/products/{id}")

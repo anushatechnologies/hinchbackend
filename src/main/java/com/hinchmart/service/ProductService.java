@@ -1,9 +1,11 @@
 package com.hinchmart.service;
 
 import com.hinchmart.dto.request.BulkPriceTierDto;
+import com.hinchmart.dto.request.PincodeInventoryRequest;
 import com.hinchmart.dto.request.ProductCreateRequest;
 import com.hinchmart.dto.request.ProductUpdateRequest;
 import com.hinchmart.dto.response.BrandDto;
+import com.hinchmart.dto.response.PincodeInventoryDto;
 import com.hinchmart.dto.response.ProductBulkPriceDto;
 import com.hinchmart.dto.response.ProductDto;
 import com.hinchmart.dto.response.ProductImageDto;
@@ -14,6 +16,8 @@ import com.hinchmart.exception.BadRequestException;
 import com.hinchmart.exception.ResourceNotFoundException;
 import com.hinchmart.exception.UnauthorizedException;
 import com.hinchmart.repository.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +31,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class ProductService {
+
+    private static final Logger log = LoggerFactory.getLogger(ProductService.class);
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
@@ -134,7 +140,7 @@ public class ProductService {
         product.setSellingPrice(request.getSellingPrice());
         product.setStock(request.getStock());
         product.setDeliveryDays(request.getDeliveryDays() != null ? request.getDeliveryDays() : 3);
-        product.setApprovalStatus(seller.getRole() == Role.ADMIN || seller.getRole() == Role.SUPER_ADMIN ?
+        product.setApprovalStatus(seller.hasAnyRole(Role.ADMIN, Role.SUPER_ADMIN) ?
                 ApprovalStatus.APPROVED : ApprovalStatus.PENDING);
         product.setDescription(request.getDescription());
         product.setSpecifications(request.getSpecifications());
@@ -143,13 +149,12 @@ public class ProductService {
         // Add Images
         if (request.getImageUrls() != null && !request.getImageUrls().isEmpty()) {
             for (int i = 0; i < request.getImageUrls().size(); i++) {
-                String url = request.getImageUrls().get(i);
-                ProductImage img = new ProductImage(product, url, i == 0, i);
+                ProductImage img = new ProductImage(product, request.getImageUrls().get(i), i == 0, i);
                 product.addImage(img);
             }
         }
 
-        // Add Bulk Pricing Tiers
+        // Add Bulk Prices
         if (request.getBulkPrices() != null && !request.getBulkPrices().isEmpty()) {
             for (BulkPriceTierDto tier : request.getBulkPrices()) {
                 ProductBulkPrice bp = new ProductBulkPrice(
@@ -163,16 +168,80 @@ public class ProductService {
             }
         }
 
-        // Initialize Inventory
-        Inventory inventory = new Inventory(product, request.getStock(), 0, 10, "Central Warehouse");
+        // Initial Pincode-Wise Inventory & Central Inventory
+        String defaultWarehouse = "Central Warehouse";
+        String defaultPincode = "411057";
+        String defaultCity = "Pune";
+        String defaultState = "Maharashtra";
+
+        if (seller.getSellerProfile() != null) {
+            if (seller.getSellerProfile().getPincode() != null && !seller.getSellerProfile().getPincode().isBlank()) {
+                defaultPincode = seller.getSellerProfile().getPincode().trim();
+            }
+            if (seller.getSellerProfile().getWarehouseAddress() != null && !seller.getSellerProfile().getWarehouseAddress().isBlank()) {
+                defaultWarehouse = seller.getSellerProfile().getWarehouseAddress();
+            }
+            if (seller.getSellerProfile().getCity() != null) {
+                defaultCity = seller.getSellerProfile().getCity();
+            }
+            if (seller.getSellerProfile().getState() != null) {
+                defaultState = seller.getSellerProfile().getState();
+            }
+        }
+
+        int totalStock = request.getStock() != null ? request.getStock() : 0;
+
+        if (request.getPincodeInventories() != null && !request.getPincodeInventories().isEmpty()) {
+            int calculatedStock = 0;
+            for (PincodeInventoryRequest pinReq : request.getPincodeInventories()) {
+                PincodeInventory pi = new PincodeInventory(
+                        product,
+                        seller,
+                        pinReq.getPincode().trim(),
+                        pinReq.getWarehouseName() != null ? pinReq.getWarehouseName() : defaultWarehouse,
+                        pinReq.getCity() != null ? pinReq.getCity() : defaultCity,
+                        pinReq.getState() != null ? pinReq.getState() : defaultState,
+                        pinReq.getQuantity(),
+                        pinReq.getDeliveryDays() != null ? pinReq.getDeliveryDays() : (request.getDeliveryDays() != null ? request.getDeliveryDays() : 3)
+                );
+                if (pinReq.getMinOrderQuantity() != null) {
+                    pi.setMinOrderQuantity(pinReq.getMinOrderQuantity());
+                }
+                product.addPincodeInventory(pi);
+                calculatedStock += (pinReq.getQuantity() != null ? pinReq.getQuantity() : 0);
+            }
+            if (calculatedStock > 0) {
+                totalStock = calculatedStock;
+                product.setStock(totalStock);
+            }
+        } else {
+            // Auto-populate default seller warehouse / pincode inventory
+            PincodeInventory pi = new PincodeInventory(
+                    product,
+                    seller,
+                    defaultPincode,
+                    defaultWarehouse,
+                    defaultCity,
+                    defaultState,
+                    totalStock,
+                    request.getDeliveryDays() != null ? request.getDeliveryDays() : 3
+            );
+            product.addPincodeInventory(pi);
+        }
+
+        Inventory inventory = new Inventory(product, totalStock, 0, 10, defaultWarehouse);
         product.setInventory(inventory);
 
-        Product savedProduct = productRepository.save(product);
+        Product saved = productRepository.save(product);
+        log.info(">>> [SKU CREATED] SKU: '{}', Product: '{}' (ID: {}), Category: '{}', Total Stock: {}, Status: {}",
+                saved.getSku(), saved.getProductName(), saved.getId(),
+                saved.getCategory() != null ? saved.getCategory().getName() : "N/A",
+                saved.getStock(), saved.getApprovalStatus());
 
         activityLogService.log(sellerUserId, seller.getEmail(), "PRODUCT_CREATED", "PRODUCT",
-                savedProduct.getId(), "Created product: " + savedProduct.getProductName(), null);
+                saved.getId(), "Created product: " + saved.getProductName(), null);
 
-        return mapToProductDto(savedProduct);
+        return mapToProductDto(saved);
     }
 
     @Transactional
@@ -184,7 +253,7 @@ public class ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + sellerUserId));
 
         // Check ownership if not admin
-        if (currentUser.getRole() != Role.ADMIN && currentUser.getRole() != Role.SUPER_ADMIN &&
+        if (!currentUser.hasAnyRole(Role.ADMIN, Role.SUPER_ADMIN) &&
                 !product.getSeller().getId().equals(sellerUserId)) {
             throw new UnauthorizedException("You do not have permission to update this product");
         }
@@ -219,7 +288,7 @@ public class ProductService {
             }
         }
         if (request.getDeliveryDays() != null) product.setDeliveryDays(request.getDeliveryDays());
-        if (request.getApprovalStatus() != null && (currentUser.getRole() == Role.ADMIN || currentUser.getRole() == Role.SUPER_ADMIN)) {
+        if (request.getApprovalStatus() != null && currentUser.hasAnyRole(Role.ADMIN, Role.SUPER_ADMIN)) {
             product.setApprovalStatus(request.getApprovalStatus());
         }
         if (request.getDescription() != null) product.setDescription(request.getDescription());
@@ -241,8 +310,14 @@ public class ProductService {
             }
         }
 
-        Product updated = productRepository.save(product);
-        return mapToProductDto(updated);
+        Product saved = productRepository.save(product);
+        log.info(">>> [SKU UPDATED] SKU: '{}', Product: '{}' (ID: {}), Price: {}, Stock: {}",
+                saved.getSku(), saved.getProductName(), saved.getId(), saved.getSellingPrice(), saved.getStock());
+
+        activityLogService.log(sellerUserId, currentUser.getEmail(), "PRODUCT_UPDATED", "PRODUCT",
+                saved.getId(), "Updated product: " + saved.getProductName(), null);
+
+        return mapToProductDto(saved);
     }
 
     @Transactional
@@ -251,6 +326,7 @@ public class ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + productId));
         product.setApprovalStatus(ApprovalStatus.APPROVED);
         Product saved = productRepository.save(product);
+        log.info(">>> [SKU APPROVED] Product '{}' (SKU: {}) approved and now live in catalog", saved.getProductName(), saved.getSku());
         return mapToProductDto(saved);
     }
 
@@ -260,6 +336,7 @@ public class ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + productId));
         product.setApprovalStatus(ApprovalStatus.REJECTED);
         Product saved = productRepository.save(product);
+        log.info(">>> [SKU REJECTED] Product '{}' (SKU: {}) rejected. Reason: {}", saved.getProductName(), saved.getSku(), rejectionReason);
         return mapToProductDto(saved);
     }
 
@@ -417,6 +494,36 @@ public class ProductService {
                     ))
                     .collect(Collectors.toList());
             dto.setBulkPrices(bulkDtos);
+        }
+
+        if (product.getPincodeInventories() != null && !product.getPincodeInventories().isEmpty()) {
+            List<PincodeInventoryDto> pinDtos = product.getPincodeInventories().stream()
+                    .map(pi -> {
+                        PincodeInventoryDto pinDto = new PincodeInventoryDto();
+                        pinDto.setId(pi.getId());
+                        pinDto.setProductId(product.getId());
+                        pinDto.setProductSku(product.getSku());
+                        pinDto.setProductName(product.getProductName());
+                        if (product.getSeller() != null) {
+                            pinDto.setSellerId(product.getSeller().getId());
+                            pinDto.setSellerName(product.getSeller().getFullName());
+                        }
+                        pinDto.setPincode(pi.getPincode());
+                        pinDto.setWarehouseName(pi.getWarehouseName());
+                        pinDto.setCity(pi.getCity());
+                        pinDto.setState(pi.getState());
+                        pinDto.setQuantity(pi.getQuantity());
+                        pinDto.setReservedQuantity(pi.getReservedQuantity());
+                        pinDto.setAvailableQuantity(pi.getAvailableQuantity());
+                        pinDto.setDeliveryDays(pi.getDeliveryDays());
+                        pinDto.setMinOrderQuantity(pi.getMinOrderQuantity());
+                        pinDto.setServiceable(pi.isActive() && pi.getAvailableQuantity() > 0);
+                        pinDto.setActive(pi.isActive());
+                        pinDto.setUpdatedAt(pi.getUpdatedAt());
+                        return pinDto;
+                    })
+                    .collect(Collectors.toList());
+            dto.setPincodeInventories(pinDtos);
         }
 
         return dto;

@@ -103,7 +103,7 @@ public class RfqService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + currentUserId));
 
         // Buyer can only view their own RFQs unless user is SELLER, ADMIN, or SUPER_ADMIN
-        if (currentUser.getRole() == Role.BUYER && !rfq.getBuyer().getId().equals(currentUserId)) {
+        if (currentUser.hasRole(Role.BUYER) && !currentUser.hasAnyRole(Role.ADMIN, Role.SUPER_ADMIN, Role.SELLER, Role.SELLER_ADMIN, Role.SELLER_STAFF) && !rfq.getBuyer().getId().equals(currentUserId)) {
             throw new UnauthorizedException("You do not have permission to view this RFQ");
         }
 

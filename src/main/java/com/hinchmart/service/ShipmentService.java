@@ -62,7 +62,7 @@ public class ShipmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Seller not found: " + sellerUserId));
 
         // Verify seller or admin
-        if (seller.getRole() != Role.ADMIN && seller.getRole() != Role.SUPER_ADMIN) {
+        if (!seller.hasAnyRole(Role.ADMIN, Role.SUPER_ADMIN)) {
             boolean isSellerOfOrder = order.getItems().stream()
                     .anyMatch(item -> item.getSeller() != null && item.getSeller().getId().equals(sellerUserId));
             if (!isSellerOfOrder) {
@@ -148,7 +148,7 @@ public class ShipmentService {
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + currentUserId));
 
-        if (currentUser.getRole() == Role.BUYER && !shipment.getOrder().getBuyer().getId().equals(currentUserId)) {
+        if (currentUser.hasRole(Role.BUYER) && !currentUser.hasAnyRole(Role.ADMIN, Role.SUPER_ADMIN) && !shipment.getOrder().getBuyer().getId().equals(currentUserId)) {
             throw new UnauthorizedException("You do not have permission to view this shipment");
         }
 

@@ -41,6 +41,13 @@ Enterprise-grade B2B Marketplace Backend built with **Java 21**, **Spring Boot 3
 - Live tracking checkpoints: $\text{PICKUP\_SCHEDULED} \rightarrow \text{PICKED\_UP} \rightarrow \text{IN\_TRANSIT} \rightarrow \text{OUT\_FOR\_DELIVERY} \rightarrow \text{DELIVERED}$.
 - Event-driven in-app notifications and FCM push token registration.
 
+### 7. Multi-Pincode Warehouse Inventory & SKU Engine
+- **Admin-Controlled SKU Creation**: Master SKU catalog entries managed by `ADMIN` and `SUPER_ADMIN`.
+- **Seller-Managed Pincode Allocations**: Sellers allocate and update stock per pincode and warehouse (`pincode_inventory`).
+- **Cross-Table Real-Time Stock Synchronization**: Automatic aggregation of total available stock across `products` and `inventory`.
+- **Real-Time Pincode Serviceability & SLA Verification**: Buyers check real-time stock, warehouse origin, and delivery timeline (`GET /api/inventory/check-availability`).
+- **Multi-Filter Inventory Search**: Search inventory by any combination of Pincode, Category, Subcategory, Brand, Keyword, and Stock status (`GET /api/inventory/search`).
+
 ---
 
 ## 🛠️ Tech Stack
@@ -53,6 +60,6 @@ Enterprise-grade B2B Marketplace Backend built with **Java 21**, **Spring Boot 3
 
 ---
 
-## 📖 API Documentation
-Start the backend and visit Swagger UI:
-👉 `http://localhost:8080/swagger-ui/index.html`
+## 📖 API Documentation & Master Flow Guide
+- Complete API Master Flow Guide: [FRONTEND_API_FLOW_MASTER.md](file:///c:/Users/ASUS/OneDrive/Desktop/HINCHMART/FRONTEND_API_FLOW_MASTER.md)
+- Swagger / OpenAPI UI: `http://localhost:8081/swagger-ui.html`

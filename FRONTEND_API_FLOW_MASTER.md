@@ -138,7 +138,7 @@ GET /api/products?query=TMT&categoryId=1&minPrice=50000&maxPrice=70000&page=0&si
 ```
 
 ### Step 2 — `GET /api/products/:id`
-*Buyer opens Product Details page. Render the `bulkPrices` array as a tiered discount pricing table.*
+*Buyer opens Product Details page. Render the `bulkPrices` array as a tiered discount pricing table and `pincodeInventories` as serviceable delivery zones.*
 
 ```http
 GET /api/products/1
@@ -151,8 +151,9 @@ GET /api/products/1
   "data": {
     "id": 1,
     "productName": "TATA Tiscon 550D TMT Bar (12mm)",
+    "sku": "TATA-TISCON-550D-12MM",
     "moq": 1,
-    "stock": 500,
+    "stock": 25,
     "unit": "Ton",
     "sellingPrice": 61500.00,
     "gstRate": 18.00,
@@ -160,8 +161,99 @@ GET /api/products/1
       { "minQuantity": 1,  "maxQuantity": 4,  "pricePerUnit": 61500.00, "label": "1 - 4 Tons (Base)" },
       { "minQuantity": 5,  "maxQuantity": 9,  "pricePerUnit": 60800.00, "label": "5 - 9 Tons (Save ₹700/Ton)" },
       { "minQuantity": 10, "maxQuantity": 50, "pricePerUnit": 59900.00, "label": "10+ Tons (Save ₹1,600/Ton)" }
+    ],
+    "pincodeInventories": [
+      {
+        "id": 1,
+        "pincode": "410218",
+        "warehouseName": "Kalamboli Yard - Bay 4",
+        "city": "Navi Mumbai",
+        "state": "Maharashtra",
+        "quantity": 15,
+        "availableQuantity": 15,
+        "deliveryDays": 2,
+        "serviceable": true
+      },
+      {
+        "id": 2,
+        "pincode": "411057",
+        "warehouseName": "Pune Hinjewadi Hub",
+        "city": "Pune",
+        "state": "Maharashtra",
+        "quantity": 10,
+        "availableQuantity": 10,
+        "deliveryDays": 1,
+        "serviceable": true
+      }
     ]
   }
+}
+```
+
+### Step 3 — `GET /api/inventory/check-availability`
+*Buyer enters delivery pincode (e.g. 411057) to check stock availability and estimated delivery timeline. (Requires Bearer token, any role).*
+
+```http
+GET /api/inventory/check-availability?skuOrId=TATA-TISCON-550D-12MM&pincode=411057&quantity=5
+Authorization: Bearer <accessToken>
+```
+
+```json
+// ✅ Response 200 OK
+{
+  "success": true,
+  "message": "Operation successful",
+  "data": {
+    "productId": 1,
+    "productSku": "TATA-TISCON-550D-12MM",
+    "productName": "TATA Tiscon 550D TMT Bar (12mm)",
+    "pincode": "411057",
+    "warehouseName": "Pune Hinjewadi Hub",
+    "city": "Pune",
+    "state": "Maharashtra",
+    "quantity": 10,
+    "availableQuantity": 10,
+    "reservedQuantity": 0,
+    "deliveryDays": 1,
+    "serviceable": true,
+    "active": true
+  },
+  "timestamp": "2026-08-22T02:13:28.123"
+}
+```
+
+### Step 4 — `GET /api/inventory/search`
+*Search all inventory across warehouses by any combination of filters: pincode, category, subcategory, brand, keyword, and stock status. (Requires Bearer token, any role).*
+
+```http
+GET /api/inventory/search?pincode=411057&categoryId=1&inStockOnly=true
+Authorization: Bearer <accessToken>
+```
+
+```json
+// ✅ Response 200 OK
+{
+  "success": true,
+  "message": "Operation successful",
+  "data": [
+    {
+      "id": 2,
+      "productId": 1,
+      "productSku": "TATA-TISCON-550D-12MM",
+      "productName": "TATA Tiscon 550D TMT Bar (12mm)",
+      "sellerId": 5,
+      "sellerName": "Anand Verma",
+      "pincode": "411057",
+      "warehouseName": "Pune Hinjewadi Hub",
+      "city": "Pune",
+      "state": "Maharashtra",
+      "quantity": 10,
+      "availableQuantity": 10,
+      "deliveryDays": 1,
+      "serviceable": true
+    }
+  ],
+  "timestamp": "2026-08-22T02:13:28.123"
 }
 ```
 
@@ -570,10 +662,132 @@ GET /api/orders/seller?page=0&size=10
 
 ---
 
-## 🟠 FLOW 2.2: Seller Product Catalog Management
+## 🟠 FLOW 2.2: Seller Multi-Pincode Inventory & Catalog Management
 
-### Step 1 — `POST /api/seller/products`
-*Seller submits a new product with bulk pricing tiers for Admin approval*
+### Step 1 — `POST /api/seller/inventory/pincode`
+*Seller adds or updates available inventory and warehouse delivery SLA for a specific SKU and Pincode. Total product and central inventory stock are automatically synchronized.*
+
+```http
+POST /api/seller/inventory/pincode
+Authorization: Bearer <sellerToken>
+Content-Type: application/json
+```
+
+```json
+// Request
+{
+  "sku": "JSW-NEO-550D-16MM",
+  "pincode": "411057",
+  "warehouseName": "Pune Hinjewadi Hub",
+  "city": "Pune",
+  "state": "Maharashtra",
+  "quantity": 40,
+  "deliveryDays": 1,
+  "minOrderQuantity": 2
+}
+
+// ✅ Response 200 OK
+{
+  "success": true,
+  "message": "Pincode inventory saved and total stock synchronized",
+  "data": {
+    "id": 5,
+    "productId": 4,
+    "productSku": "JSW-NEO-550D-16MM",
+    "productName": "JSW Neosteel 550D TMT Bar (16mm)",
+    "sellerId": 5,
+    "sellerName": "Anand Verma",
+    "pincode": "411057",
+    "warehouseName": "Pune Hinjewadi Hub",
+    "city": "Pune",
+    "state": "Maharashtra",
+    "quantity": 40,
+    "reservedQuantity": 0,
+    "availableQuantity": 40,
+    "deliveryDays": 1,
+    "minOrderQuantity": 2,
+    "active": true,
+    "serviceable": true,
+    "updatedAt": "2026-08-22T02:13:28.123"
+  },
+  "timestamp": "2026-08-22T02:13:28.123"
+}
+```
+
+### Step 2 — `POST /api/seller/inventory/pincode/bulk`
+*Seller bulk-updates stock across multiple pincodes or SKUs.*
+
+```http
+POST /api/seller/inventory/pincode/bulk
+Authorization: Bearer <sellerToken>
+Content-Type: application/json
+```
+
+```json
+// Request
+[
+  {
+    "sku": "JSW-NEO-550D-16MM",
+    "pincode": "411057",
+    "warehouseName": "Pune Hinjewadi Hub",
+    "city": "Pune",
+    "quantity": 40,
+    "deliveryDays": 1
+  },
+  {
+    "sku": "JSW-NEO-550D-16MM",
+    "pincode": "400001",
+    "warehouseName": "Mumbai South Logistics Yard",
+    "city": "Mumbai",
+    "quantity": 30,
+    "deliveryDays": 2
+  }
+]
+
+// ✅ Response 200 OK
+{
+  "success": true,
+  "message": "Bulk pincode inventories updated successfully",
+  "data": [ ... ],
+  "timestamp": "2026-08-22T02:13:28.123"
+}
+```
+
+### Step 3 — `GET /api/seller/inventory/pincode/sku/:sku`
+*Seller views all warehouse locations and stock allocations for a SKU.*
+
+```http
+GET /api/seller/inventory/pincode/sku/JSW-NEO-550D-16MM
+Authorization: Bearer <sellerToken>
+```
+
+```json
+// ✅ Response 200 OK
+{
+  "success": true,
+  "data": [
+    {
+      "id": 5,
+      "pincode": "411057",
+      "warehouseName": "Pune Hinjewadi Hub",
+      "quantity": 40,
+      "availableQuantity": 40,
+      "deliveryDays": 1
+    },
+    {
+      "id": 6,
+      "pincode": "400001",
+      "warehouseName": "Mumbai South Logistics Yard",
+      "quantity": 30,
+      "availableQuantity": 30,
+      "deliveryDays": 2
+    }
+  ]
+}
+```
+
+### Step 4 — `POST /api/seller/products`
+*Seller submits a new product catalog item for Admin approval.*
 
 ```json
 // Request
@@ -582,11 +796,12 @@ GET /api/orders/seller?page=0&size=10
   "categoryId": 2,
   "subcategoryId": 4,
   "brandId": 2,
+  "sku": "ULTRA-SUPER-50KG",
   "description": "High performance blended cement for high strength concrete.",
   "hsnCode": "252329",
   "moq": 50,
   "stock": 2000,
-  "unit": "Bag",
+  "unit": "BAG",
   "mrp": 420.00,
   "sellingPrice": 385.00,
   "gstRate": 28.00,
@@ -796,7 +1011,52 @@ Authorization: Bearer <admin_token>
 }
 ```
 
-### Step 2 — `PATCH /api/admin/products/:id/approve`
+### Step 2 — `POST /api/admin/products`
+*Admin directly creates a new Master SKU catalog entry with automatic central and pincode inventory population.*
+
+```http
+POST /api/admin/products
+Authorization: Bearer <admin_token>
+Content-Type: application/json
+```
+
+```json
+// Request
+{
+  "productName": "JSW Neosteel 550D TMT Bar (16mm)",
+  "categoryId": 1,
+  "subcategoryId": 1,
+  "brandId": 1,
+  "sku": "JSW-NEO-550D-16MM",
+  "hsnCode": "72142090",
+  "gstRate": 18.00,
+  "moq": 2,
+  "unit": "TON",
+  "mrp": 66000.00,
+  "sellingPrice": 62000.00,
+  "stock": 50,
+  "deliveryDays": 2,
+  "description": "High ductility earthquake-resistant Fe 550D grade steel rebars.",
+  "specifications": "{\"Grade\":\"Fe 550D\",\"Diameter\":\"16mm\"}"
+}
+
+// ✅ Response 201 Created
+{
+  "success": true,
+  "message": "SKU item created successfully by Admin",
+  "data": {
+    "id": 4,
+    "productName": "JSW Neosteel 550D TMT Bar (16mm)",
+    "sku": "JSW-NEO-550D-16MM",
+    "approvalStatus": "APPROVED",
+    "stock": 50,
+    "sellingPrice": 62000.00
+  },
+  "timestamp": "2026-08-22T02:13:28.123"
+}
+```
+
+### Step 3 — `PATCH /api/admin/products/:id/approve`
 *Admin approves product to appear in public search and catalog*
 
 ```http
@@ -845,5 +1105,80 @@ Authorization: Bearer <admin_token>
     "refundStatus": "PROCESSED",                             ← Refund successful
     "gatewayRefundId": "rfnd_O5h82x9A1b2c"
   }
+}
+```
+
+---
+
+# ⚠️ PART 4: STANDARD API RESPONSE & ERROR HANDLING
+
+All API endpoints return standard, predictable JSON envelopes with ISO-8601 formatted timestamps:
+
+### ✅ 1. Standard Success Response Envelope
+```json
+{
+  "success": true,
+  "message": "Operation successful",
+  "data": { ... },
+  "timestamp": "2026-08-22T02:13:28.123"
+}
+```
+
+### ❌ 2. Standard 401 Unauthorized Response (Missing, Expired, or Invalid Token)
+```json
+{
+  "success": false,
+  "message": "Authentication failed: Token is missing, expired, or invalid. Please provide a valid Bearer token.",
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Authentication failed: Token is missing, expired, or invalid. Please provide a valid Bearer token.",
+    "details": null
+  },
+  "timestamp": "2026-08-22T02:13:28.123"
+}
+```
+
+### ❌ 3. Standard 403 Forbidden Response (Insufficient Role Permissions)
+```json
+{
+  "success": false,
+  "message": "Access denied: You do not have permission or the required role to perform this action.",
+  "error": {
+    "code": "ACCESS_DENIED",
+    "message": "Access denied: You do not have permission or the required role to perform this action.",
+    "details": null
+  },
+  "timestamp": "2026-08-22T02:13:28.123"
+}
+```
+
+### ❌ 4. Standard 400 Validation Error Response
+```json
+{
+  "success": false,
+  "message": "Request validation failed",
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Request validation failed",
+    "details": {
+      "pincode": "Delivery pincode must be a 6-digit number",
+      "quantity": "Quantity must be at least 1"
+    }
+  },
+  "timestamp": "2026-08-22T02:13:28.123"
+}
+```
+
+### ❌ 5. Standard 404 Not Found Response
+```json
+{
+  "success": false,
+  "message": "Product not found with SKU: JSW-INVALID-SKU",
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Product not found with SKU: JSW-INVALID-SKU",
+    "details": null
+  },
+  "timestamp": "2026-08-22T02:13:28.123"
 }
 ```

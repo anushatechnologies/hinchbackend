@@ -3,13 +3,15 @@ package com.hinchmart.service;
 import com.hinchmart.entity.User;
 import com.hinchmart.entity.enums.AccountStatus;
 import com.hinchmart.repository.UserRepository;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -28,6 +30,10 @@ public class CustomUserDetailsService implements UserDetailsService {
         boolean enabled = user.getStatus() == AccountStatus.ACTIVE;
         boolean accountNonLocked = user.getStatus() != AccountStatus.SUSPENDED;
 
+        List<GrantedAuthority> authorities = user.getRoles().stream()
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name()))
+                .collect(Collectors.toList());
+
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPassword(),
@@ -35,7 +41,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 true,
                 true,
                 accountNonLocked,
-                Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
+                authorities
         );
     }
 }

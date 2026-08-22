@@ -253,6 +253,8 @@ public class DataInitializer implements CommandLineRunner {
         tataTmt.addBulkPrice(new ProductBulkPrice(tataTmt, 25, null, new BigDecimal("58500.00"), new BigDecimal("4.88")));
 
         tataTmt.setInventory(new Inventory(tataTmt, 25, 0, 5, "Kalamboli Yard - Bay 4"));
+        tataTmt.addPincodeInventory(new PincodeInventory(tataTmt, savedSeller, "410218", "Kalamboli Yard - Bay 4", "Navi Mumbai", "Maharashtra", 15, 2));
+        tataTmt.addPincodeInventory(new PincodeInventory(tataTmt, savedSeller, "411057", "Pune Hinjewadi Hub", "Pune", "Maharashtra", 10, 1));
         productRepository.save(tataTmt);
 
         // Product 2: UltraTech Super PPC Cement
@@ -283,6 +285,8 @@ public class DataInitializer implements CommandLineRunner {
         ultraPpc.addBulkPrice(new ProductBulkPrice(ultraPpc, 500, null, new BigDecimal("350.00"), new BigDecimal("7.89")));
 
         ultraPpc.setInventory(new Inventory(ultraPpc, 1200, 0, 100, "Bhiwandi Central Depot"));
+        ultraPpc.addPincodeInventory(new PincodeInventory(ultraPpc, savedSeller, "421302", "Bhiwandi Central Depot", "Bhiwandi", "Maharashtra", 800, 1));
+        ultraPpc.addPincodeInventory(new PincodeInventory(ultraPpc, savedSeller, "411057", "Pune Depot", "Pune", "Maharashtra", 400, 1));
         productRepository.save(ultraPpc);
 
         // Product 3: Astral Taurus HDPE Pressure Pipe
@@ -313,6 +317,8 @@ public class DataInitializer implements CommandLineRunner {
         astralHdpe.addBulkPrice(new ProductBulkPrice(astralHdpe, 1000, null, new BigDecimal("105.00"), new BigDecimal("12.50")));
 
         astralHdpe.setInventory(new Inventory(astralHdpe, 3000, 0, 200, "Panvel Logistics Center"));
+        astralHdpe.addPincodeInventory(new PincodeInventory(astralHdpe, savedSeller, "410206", "Panvel Logistics Center", "Panvel", "Maharashtra", 2000, 2));
+        astralHdpe.addPincodeInventory(new PincodeInventory(astralHdpe, savedSeller, "411057", "Pune Logistics Center", "Pune", "Maharashtra", 1000, 3));
         productRepository.save(astralHdpe);
 
         // 5. Initialize Sample RFQ

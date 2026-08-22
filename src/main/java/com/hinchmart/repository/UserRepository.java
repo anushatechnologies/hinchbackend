@@ -20,13 +20,18 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmailOrPhone(String email, String phone);
     boolean existsByEmail(String email);
     boolean existsByPhone(String phone);
-    List<User> findByRole(Role role);
+    @Query("SELECT DISTINCT u FROM User u JOIN u.roles r WHERE r = :role")
+    List<User> findByRole(@Param("role") Role role);
+
     List<User> findByStatus(AccountStatus status);
-    long countByRole(Role role);
 
-    Page<User> findByRoleOrderByCreatedAtDesc(Role role, Pageable pageable);
+    @Query("SELECT COUNT(DISTINCT u) FROM User u JOIN u.roles r WHERE r = :role")
+    long countByRole(@Param("role") Role role);
 
-    @Query("SELECT u FROM User u LEFT JOIN u.buyerProfile bp WHERE u.role = com.hinchmart.entity.enums.Role.BUYER AND " +
+    @Query("SELECT DISTINCT u FROM User u JOIN u.roles r WHERE r = :role ORDER BY u.createdAt DESC")
+    Page<User> findByRoleOrderByCreatedAtDesc(@Param("role") Role role, Pageable pageable);
+
+    @Query("SELECT DISTINCT u FROM User u LEFT JOIN u.buyerProfile bp JOIN u.roles r WHERE r = com.hinchmart.entity.enums.Role.BUYER AND " +
             "(:search IS NULL OR :search = '' OR " +
             "LOWER(u.fullName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +

@@ -247,6 +247,7 @@ public class UserService {
         dto.setPhone(buyer.getPhone());
         dto.setStatus(buyer.getStatus());
         dto.setRole(buyer.getRole());
+        dto.setRoles(buyer.getRoles());
         dto.setCreatedAt(buyer.getCreatedAt());
         dto.setUpdatedAt(buyer.getUpdatedAt());
 
@@ -334,4 +335,44 @@ public class UserService {
 
         return dto;
     }
+
+    @Transactional
+    public UserDto makeUserAdmin(Long userId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "User not found with id: " + userId
+                        )
+                );
+
+        if (user.hasRole(Role.SUPER_ADMIN)) {
+            throw new RuntimeException(
+                    "SUPER_ADMIN cannot be changed to ADMIN"
+            );
+        }
+
+        if (user.hasRole(Role.ADMIN)) {
+            throw new RuntimeException(
+                    "User is already an ADMIN"
+            );
+        }
+
+        user.addRole(Role.ADMIN);
+
+        User savedUser = userRepository.save(user);
+
+        return authService.mapToUserDto(savedUser);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getSuperAdminEmails() {
+
+        return userRepository.findByRole(Role.SUPER_ADMIN)
+                .stream()
+                .map(User::getEmail)
+                .filter(email -> email != null && !email.isBlank())
+                .collect(Collectors.toList());
+    }
+
 }

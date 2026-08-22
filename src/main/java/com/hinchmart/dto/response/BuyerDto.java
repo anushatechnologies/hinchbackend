@@ -28,6 +28,7 @@ public class BuyerDto {
     private BigDecimal lifetimeSpend;
     private AccountStatus status;
     private Role role;
+    private java.util.Set<Role> roles = new java.util.HashSet<>();
     private BuyerProfileDto buyerProfile;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -193,6 +194,17 @@ public class BuyerDto {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public java.util.Set<Role> getRoles() {
+        if (roles == null) {
+            roles = new java.util.HashSet<>();
+        }
+        return roles;
+    }
+
+    public void setRoles(java.util.Set<Role> roles) {
+        this.roles = roles != null ? roles : new java.util.HashSet<>();
     }
 
     public BuyerProfileDto getBuyerProfile() {
