@@ -61,6 +61,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // Public Health Check Endpoint
                 .requestMatchers("/health", "/health/**", "/api/health", "/api/health/**", "/api/v1/health", "/api/v1/health/**").permitAll()
+                .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                 // Public Auth Endpoints (v1 & default)
                 .requestMatchers("/api/auth/**", "/api/v1/auth/**").permitAll()
                 // Public Catalog Endpoints
