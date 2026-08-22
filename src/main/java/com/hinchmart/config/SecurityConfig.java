@@ -57,6 +57,8 @@ public class SecurityConfig {
                 .accessDeniedHandler(customAccessDeniedHandler)
             )
             .authorizeHttpRequests(auth -> auth
+                // Public Health Check Endpoint
+                .requestMatchers("/api/health", "/api/v1/health").permitAll()
                 // Public Auth Endpoints (v1 & default)
                 .requestMatchers("/api/auth/**", "/api/v1/auth/**").permitAll()
                 // Public Catalog Endpoints
